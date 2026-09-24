@@ -19,7 +19,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const RESEND_API_URL = "https://api.resend.com/emails";
 
-const SITE_URL = "https://jinanalsaber.github.io/WWU-Accessibility-Map/user";
+const SITE_URL = "https://jinanal-saber.github.io/WWU-Accessibility-Platform/user"; 
 
 // TODO: once you've verified a domain with Resend, change this to an address
 // on that domain (e.g. "WWU AccessMap <notifications@yourdomain.com>").

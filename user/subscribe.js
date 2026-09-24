@@ -11,9 +11,6 @@ const WWU_BUILDING_NAMES = [
     "Fairhaven Academic Building / Fairhaven College (FA)", "Fairhaven Complex (FX)",
     "Fraser Hall (FR)", "Humanities Building (HU)", "Mathes Hall (MA)", "Nash Hall (NA)",
     "Edens Hall (EH)", "Performing Arts Center (PA)"
-    // Buildings with unverified coordinates are left out here too, same reasoning as
-    // the map page — but if you want them selectable for notifications regardless of
-    // whether they show on the map, just add the rest of make_report.js's building list.
 ];
 
 function populateBuildingOptions() {
@@ -55,6 +52,18 @@ function clearError() {
     errorEl.classList.remove("visible");
 }
 
+// Generates the unsubscribe token ourselves, client-side, rather than asking the
+// database to generate one and read it back — reading a row back after INSERT
+// requires a SELECT policy, and this table deliberately has none (so subscriber
+// emails can never be browsed via the public API). Generating it here avoids
+// needing that read entirely.
+function generateUnsubscribeToken() {
+    if (window.crypto && window.crypto.randomUUID) {
+        return window.crypto.randomUUID().replace(/-/g, "");
+    }
+    return Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     populateBuildingOptions();
     wireUpAllNotificationsToggle();
@@ -79,36 +88,13 @@ document.addEventListener("DOMContentLoaded", () => {
         submitBtn.disabled = true;
         submitBtn.textContent = "Subscribing...";
 
-        const { data, error } = await _supabase
+        const unsubscribeToken = generateUnsubscribeToken();
+
+        // No .select() here on purpose — see generateUnsubscribeToken's comment.
+        const { error } = await _supabase
             .from('subscriptions')
             .insert([{
                 email: email,
                 buildings: allNotifications || buildings.length === 0 ? null : buildings,
                 categories: allNotifications || categories.length === 0 ? null : categories,
-                all_notifications: allNotifications
-            }])
-            .select();
-
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = '<i class="fa-solid fa-bell"></i> Subscribe to Notifications';
-
-        if (error) {
-            console.error("Error creating subscription:", error.message);
-            showError("Something went wrong saving your subscription. Please try again.");
-            return;
-        }
-
-        const newSubscription = data && data[0];
-
-        form.hidden = true;
-        const successBox = document.getElementById("subscribe-success");
-        successBox.hidden = false;
-
-        if (newSubscription && newSubscription.unsubscribe_token) {
-            const unsubUrl = `${window.location.origin}${window.location.pathname.replace('subscribe.html', 'unsubscribe.html')}?token=${newSubscription.unsubscribe_token}`;
-            const link = document.getElementById("subscribe-unsub-link");
-            link.href = unsubUrl;
-            link.textContent = unsubUrl;
-        }
-    });
-});
+                all_notifications: allNotifications,
