@@ -52,18 +52,6 @@ function clearError() {
     errorEl.classList.remove("visible");
 }
 
-// Generates the unsubscribe token ourselves, client-side, rather than asking the
-// database to generate one and read it back — reading a row back after INSERT
-// requires a SELECT policy, and this table deliberately has none (so subscriber
-// emails can never be browsed via the public API). Generating it here avoids
-// needing that read entirely.
-function generateUnsubscribeToken() {
-    if (window.crypto && window.crypto.randomUUID) {
-        return window.crypto.randomUUID().replace(/-/g, "");
-    }
-    return Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
-}
-
 document.addEventListener("DOMContentLoaded", () => {
     populateBuildingOptions();
     wireUpAllNotificationsToggle();
@@ -88,13 +76,32 @@ document.addEventListener("DOMContentLoaded", () => {
         submitBtn.disabled = true;
         submitBtn.textContent = "Subscribing...";
 
-        const unsubscribeToken = generateUnsubscribeToken();
+        // Calls a database function that inserts the row and returns the new
+        // unsubscribe token, all under the database's own elevated privileges —
+        // this sidesteps needing any SELECT permission on the subscriptions table.
+        const { data: returnedToken, error } = await _supabase.rpc('create_subscription', {
+            p_email: email,
+            p_buildings: allNotifications || buildings.length === 0 ? null : buildings,
+            p_categories: allNotifications || categories.length === 0 ? null : categories,
+            p_all_notifications: allNotifications
+        });
 
-        // No .select() here on purpose — see generateUnsubscribeToken's comment.
-        const { error } = await _supabase
-            .from('subscriptions')
-            .insert([{
-                email: email,
-                buildings: allNotifications || buildings.length === 0 ? null : buildings,
-                categories: allNotifications || categories.length === 0 ? null : categories,
-                all_notifications: allNotifications,
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fa-solid fa-bell"></i> Subscribe to Notifications';
+
+        if (error) {
+            console.error("Error creating subscription:", error.message);
+            showError("Something went wrong saving your subscription. Please try again.");
+            return;
+        }
+
+        form.hidden = true;
+        const successBox = document.getElementById("subscribe-success");
+        successBox.hidden = false;
+
+        const unsubUrl = `${window.location.origin}${window.location.pathname.replace('subscribe.html', 'unsubscribe.html')}?token=${returnedToken}`;
+        const link = document.getElementById("subscribe-unsub-link");
+        link.href = unsubUrl;
+        link.textContent = unsubUrl;
+    });
+});
