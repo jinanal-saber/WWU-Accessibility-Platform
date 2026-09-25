@@ -157,12 +157,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Standout Action Button (Light Green Accent) */
-#report-issue-nav-btn,
-.nav-btn.btn-accent {
-    background-color: var(--light-green); /* #BAD80A */
-    color: var(--black); /* #1C2023 for high contrast accessibility */
-    font-weight: 800;
-}
+
 
 #report-issue-nav-btn:hover,
 .nav-btn.btn-accent:hover {
@@ -264,7 +259,7 @@ h1, h2, h3, h4, h5, h6 {
 .hero-bg {
     width: 100%;
     height: 85%;
-    background-image: url('photos/campus-2.jpg');
+    background-image: url('photos/campus-3.jpg');
     background-size: cover;
     background-position: center;
 }

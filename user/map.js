@@ -232,10 +232,9 @@ function renderAccessibilityFeatures() {
             position: { lat: feature.lat, lng: feature.lng },
             map: mainMapInstance,
             title: feature.description || feature.type,
-            label: { text: config.emoji, fontSize: "13px" },
             icon: {
                 path: google.maps.SymbolPath.CIRCLE,
-                scale: 13,
+                scale: 8,
                 fillColor: config.color,
                 fillOpacity: 1,
                 strokeColor: "#ffffff",
@@ -272,14 +271,13 @@ function renderBuildingMarkers() {
             position: bData.center,
             map: mainMapInstance,
             title: bName + (hasDocumentedADA ? " (ADA info available)" : ""),
-            label: { text: hasDocumentedADA ? "♿" : "🏢", fontSize: "13px" },
             icon: {
                 path: google.maps.SymbolPath.CIRCLE,
-                scale: 14,
+                scale: 11,
                 fillColor: hasDocumentedADA ? "#000000" : "#003F87",
                 fillOpacity: 1,
                 strokeColor: "#ffffff",
-                strokeWeight: 2
+                strokeWeight: 2.5
             },
             zIndex: 500 // keep building markers above report/accessibility pins so they're easy to click
         });
@@ -440,11 +438,24 @@ async function loadCampusReports() {
             ? `<img src="${escapeHtml(report.image_url)}" alt="Report Attachment" style="width:100%; max-height:160px; object-fit:cover; border-radius:6px; margin-top:8px;" />`
             : '';
 
-        // Add Marker on Google Map
+        // Add Marker on Google Map — colored by severity, matching the same
+        // green/yellow/red palette used for severity badges everywhere else on the site
+        const severityColors = { low: "#006B3F", medium: "#FFC61E", critical: "#CC2D30" };
+        const severityKey = (report.severity || "medium").toLowerCase();
+        const markerColor = severityColors[severityKey] || severityColors.medium;
+
         const marker = new google.maps.Marker({
             position: reportLocation,
             map: mainMapInstance,
-            title: report.title
+            title: report.title,
+            icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 9,
+                fillColor: markerColor,
+                fillOpacity: 1,
+                strokeColor: "#ffffff",
+                strokeWeight: 2
+            }
         });
 
         // Map InfoWindow
@@ -467,26 +478,28 @@ async function loadCampusReports() {
 
         let cardEl = null;
 
-        // Add Feed Card
+        // Add Feed Card — photo-forward layout with a colored severity dot,
+        // matching the cleaner civic-reporting card style used across the site
         if (feedContainer) {
             const card = document.createElement("div");
             card.className = "report-card";
             card.style.cursor = "pointer";
 
+            const photoHtml = report.image_url
+                ? `<img src="${escapeHtml(report.image_url)}" alt="Report photo" class="sidebar-card-photo" />`
+                : '';
+
             card.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
-                    <h3 style="margin: 0; font-size: 1rem; font-weight: 600;">${safeTitle}</h3>
-                    <span style="font-size: 11px; color: #64748b; white-space: nowrap;">
-                        <i class="fa-regular fa-clock"></i> ${formattedDate}
-                    </span>
-                </div>
-                <p style="margin: 6px 0; font-size: 0.9rem; color: #475569;">${safeDescription}</p>
-                ${imageHtml}
-                <div style="margin-top: 10px; display: flex; align-items: center; justify-content: space-between;">
-                    <span class="badge ${report.severity ? report.severity.toLowerCase() : 'medium'}">${safeSeverity}</span>
-                    <span style="font-size: 12px; color: #64748b; font-weight: 500;">
-                        <i class="fa-solid fa-building"></i> ${safeBuilding}
-                    </span>
+                ${photoHtml}
+                <div class="sidebar-card-body">
+                    <div class="sidebar-card-meta-row">
+                        <span class="sidebar-card-dot ${severityKey}"></span>
+                        <span class="sidebar-card-severity-label">${safeSeverity}</span>
+                        <span class="sidebar-card-time"><i class="fa-regular fa-clock"></i> ${formattedDate}</span>
+                    </div>
+                    <h3 class="sidebar-card-title">${safeTitle}</h3>
+                    <div class="sidebar-card-location"><i class="fa-solid fa-location-dot"></i> ${safeBuilding}</div>
+                    <p class="sidebar-card-desc">${safeDescription}</p>
                 </div>
             `;
 
