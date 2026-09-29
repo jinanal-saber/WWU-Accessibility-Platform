@@ -629,3 +629,11 @@ h1, h2, h3, h4, h5, h6 {
     background-color: var(--blue);
     transform: translateX(-50%) translateY(-2px);
 }
+
+/* Small data-source note under the accessibility layer toggles */
+.layers-note {
+    font-size: 11px;
+    line-height: 1.4;
+    color: var(--gray);
+    margin-top: 10px;
+}

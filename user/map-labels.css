@@ -1,0 +1,145 @@
+/* ==========================================================================
+   Label design — change these values to restyle every map label at once.
+   (Which labels exist, and where, is in map-labels.js.)
+   ========================================================================== */
+:root {
+    /* Building names: dark text with a white outline, like WWU's own map */
+    --label-building-color: #0B2A4A;
+    --label-building-halo: #FFFFFF;
+    --label-building-size: 12px;
+    --label-building-weight: 700;
+
+    /* Street names: white text with a dark outline, so they read on pavement and trees */
+    --label-street-color: #FFFFFF;
+    --label-street-halo: #0B2A4A;
+    --label-street-size: 11px;
+    --label-street-weight: 600;
+    --label-street-spacing: 0.14em;   /* extra space between letters */
+
+    /* Set automatically from the zoom level; leave alone */
+    --label-zoom-scale: 1;
+}
+
+/* ==========================================================================
+   Label shapes (you usually don't need to edit below this line)
+   ========================================================================== */
+.map-label {
+    position: absolute;
+    pointer-events: none;   /* clicks pass through to the map and markers underneath */
+    user-select: none;
+    font-family: var(--font-heading, "Montserrat", -apple-system, "Segoe UI", sans-serif);
+    line-height: 1.15;
+    text-align: center;
+    width: max-content;
+}
+
+/* Building: sits just below the building's dot, wraps long names onto two lines */
+.map-label--building {
+    max-width: 118px;
+    white-space: normal;
+    transform: translate(-50%, 9px);
+    color: var(--label-building-color);
+    font-size: calc(var(--label-building-size) * var(--label-zoom-scale));
+    font-weight: var(--label-building-weight);
+    text-shadow:
+        -1.5px -1.5px 0 var(--label-building-halo), 1.5px -1.5px 0 var(--label-building-halo),
+        -1.5px  1.5px 0 var(--label-building-halo), 1.5px  1.5px 0 var(--label-building-halo),
+         0    -2px   0 var(--label-building-halo), 0     2px   0 var(--label-building-halo),
+        -2px   0     0 var(--label-building-halo), 2px   0     0 var(--label-building-halo),
+         0 0 6px var(--label-building-halo);
+}
+
+/* Street: centered on its spot and turned to follow the street */
+.map-label--street {
+    white-space: nowrap;
+    transform: translate(-50%, -50%) rotate(var(--label-angle, 0deg));
+    text-transform: uppercase;
+    letter-spacing: var(--label-street-spacing);
+    color: var(--label-street-color);
+    font-size: calc(var(--label-street-size) * var(--label-zoom-scale));
+    font-weight: var(--label-street-weight);
+    text-shadow:
+        -1.5px -1.5px 0 var(--label-street-halo), 1.5px -1.5px 0 var(--label-street-halo),
+        -1.5px  1.5px 0 var(--label-street-halo), 1.5px  1.5px 0 var(--label-street-halo),
+         0    -2px   0 var(--label-street-halo), 0     2px   0 var(--label-street-halo),
+        -2px   0     0 var(--label-street-halo), 2px   0     0 var(--label-street-halo),
+         0 0 6px var(--label-street-halo);
+}
+
+/* ==========================================================================
+   "Zoom in" hint chip (shown while accessibility features are still hidden)
+   ========================================================================== */
+.zoom-hint {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 300;
+    pointer-events: none;
+    background-color: rgba(255, 255, 255, 0.96);
+    color: var(--dark-blue, #003F87);
+    font-family: var(--font-heading, "Montserrat", sans-serif);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+    white-space: nowrap;
+}
+
+.zoom-hint[hidden] {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .zoom-hint {
+        top: 10px;
+        font-size: 12px;
+        padding: 7px 12px;
+    }
+}
+
+/* ==========================================================================
+   Label helper panel (only appears with ?labelhelper=1 on the page address)
+   ========================================================================== */
+.label-helper {
+    position: absolute;
+    left: 16px;
+    bottom: 16px;
+    z-index: 500;
+    width: 300px;
+    background: #fff;
+    border-radius: 10px;
+    padding: 12px 14px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    font-family: var(--font-body, "Fira Sans", sans-serif);
+    font-size: 12px;
+    color: #1C2023;
+}
+
+.label-helper p {
+    margin: 6px 0 8px;
+    line-height: 1.4;
+    color: #52606D;
+}
+
+.label-helper textarea {
+    width: 100%;
+    font-family: monospace;
+    font-size: 11px;
+    border: 1px solid #E1E6EB;
+    border-radius: 6px;
+    padding: 6px;
+    resize: none;
+}
+
+.label-helper button {
+    margin-top: 6px;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    background: #003F87;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+}

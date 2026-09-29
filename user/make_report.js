@@ -4,7 +4,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_yz9UL8JKWSLXCCVLOjbJEg_2gusRAA5";
 const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const WWU_CAMPUS_CENTER = { lat: 48.734288, lng: -122.486610 }; // verified: WWU's official Google Places listing
-const MAX_CAMPUS_RADIUS_METERS = 750;
+const MAX_CAMPUS_RADIUS_METERS = 1250;
 const VIEWPORT_PADDING_METERS = 150;
 
 // Helper: build a rectangular LatLngBounds around a center point, offset by the given radius in meters.

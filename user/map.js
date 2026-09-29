@@ -5,7 +5,7 @@ const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Campus Center & Radius Configuration
 const WWU_CAMPUS_CENTER = { lat: 48.734288, lng: -122.486610 }; // verified: WWU's official Google Places listing
-const MAX_CAMPUS_RADIUS_METERS = 750;
+const MAX_CAMPUS_RADIUS_METERS = 1250; // widened from 750: WWU data includes real campus points out to ~1.1 km
 
 // How far past the visible circle the pannable viewport is allowed to go (rectangular restriction, so give it a bit of breathing room past the circle edge)
 const VIEWPORT_PADDING_METERS = 150;
@@ -40,37 +40,27 @@ let mainMapInstance;
 let campusMaskPolygon = null;
 
 // -----------------------------------------------------------------------------------
-// Static accessibility feature points (automatic doors, accessible parking, elevators,
-// ramps, accessible restrooms, construction zones) shown as toggleable map layers.
+// Accessibility feature points (entrances, parking, elevators, accessible restrooms,
+// and accessible-route points), shown as toggleable map layers.
 //
-// This starts EMPTY on purpose. Individual door/parking-spot coordinates are precise
-// enough that guessing them would be actively misleading for an accessibility tool —
-// this needs to come from WWU's own official campus map (map.wwu.edu, "Accessibility"
-// layer), not estimated.
-//
-// To add a real feature once you have its coordinates: get the lat/lng either by
-// finding the matching real-world spot on Google Maps (right-click -> the numbers
-// that appear are copyable) while cross-referencing what map.wwu.edu shows, then add
-// an entry here, e.g.:
-//
-// { type: "automatic_door", lat: 48.73660, lng: -122.48470, building: "Miller Hall (MH)", description: "Main west entrance, push-button door" },
-// { type: "accessible_parking", lat: 48.73400, lng: -122.48600, building: "Wilson Library (WL)", description: "2 accessible stalls, north lot" },
-//
-// Valid "type" values: automatic_door, accessible_parking, elevator, ramp, accessible_restroom, construction
-const ACCESSIBILITY_FEATURES = [
-    // (empty — see comment above)
-];
-
+// The data itself lives in accessibility-data.js (ACCESSIBILITY_FEATURES) — generated
+// from WWU's own campus map export rather than typed by hand here.
+// -----------------------------------------------------------------------------------
 const LAYER_ICON_CONFIG = {
-    automatic_door: { color: "#007AC8", emoji: "🚪" },
-    accessible_parking: { color: "#7c3aed", emoji: "🅿️" },
-    elevator: { color: "#006B3F", emoji: "🛗" },
-    ramp: { color: "#FFC61E", emoji: "♿" },
-    accessible_restroom: { color: "#0EA5E9", emoji: "🚻" },
-    construction: { color: "#CC2D30", emoji: "🚧" }
+    accessible_entrance: { color: "#6D3FB2", label: "Accessible entrance" },
+    accessible_parking: { color: "#1E63C8", label: "Accessible parking" },
+    elevator: { color: "#1C2023", label: "Elevator" },
+    accessible_restroom: { color: "#1C2023", label: "Accessible restroom" },
+    ada_route: { color: "#003F87", label: "Accessible route" },
+    functional_route: { color: "#F97316", label: "Functionally accessible route" }
 };
 
+// WWU's export has ONE point per route, not the full path, so these are drawn smaller
+// and labeled as a single point along the route
+const ROUTE_LAYER_TYPES = ["ada_route", "functional_route"];
+
 let accessibilityMarkers = []; // { marker, type } for every rendered feature, so toggles can show/hide them
+let layerCheckboxes = {};    // layer type -> its sidebar checkbox
 
 // -----------------------------------------------------------------------------------
 // Building locations + ADA info for the main map's building markers. Duplicated (in
@@ -109,36 +99,6 @@ const WWU_BUILDINGS_FOR_MAP = {
 
 let buildingMarkers = [];
 
-// -----------------------------------------------------------------------------------
-// Accessible route lines (the dashed paths connecting accessible entrances/ramps on
-// WWU's own official map). Same situation as ACCESSIBILITY_FEATURES: this needs real
-// path coordinates from map.wwu.edu, not an estimate — starts empty on purpose.
-//
-// Each route is an array of {lat, lng} points tracing the path, e.g.:
-// { name: "Red Square accessible path", points: [{lat: 48.7375, lng: -122.4858}, {lat: 48.7378, lng: -122.4855}, ...] }
-const ACCESSIBLE_ROUTES = [
-    // (empty — see comment above)
-];
-
-let routePolylines = [];
-
-// Draws each route as a dashed line, matching the visual style of WWU's own
-// accessibility route lines
-function renderAccessibleRoutes() {
-    ACCESSIBLE_ROUTES.forEach(route => {
-        const polyline = new google.maps.Polyline({
-            path: route.points,
-            strokeOpacity: 0, // invisible solid stroke — the dash pattern below does the actual drawing
-            icons: [{
-                icon: { path: "M 0,-1 0,1", strokeOpacity: 1, strokeColor: "#003F87", scale: 3 },
-                offset: "0",
-                repeat: "12px"
-            }],
-            map: mainMapInstance
-        });
-        routePolylines.push(polyline);
-    });
-}
 
 // Holds { report, marker, infoWindow, cardEl } for every loaded report so we can filter both the map and the feed together
 let loadedReportEntries = [];
@@ -201,7 +161,9 @@ async function initMap() {
         minZoom: 15,
         center: WWU_CAMPUS_CENTER,
         disableDefaultUI: false,
-        mapTypeId: google.maps.MapTypeId.HYBRID, 
+        mapTypeId: google.maps.MapTypeId.SATELLITE, // plain satellite photo: has no text of its own (all labels come from map-labels.js)
+        mapTypeControl: false, // no Map/Satellite switcher, so Google's own labels can't be turned back on
+        tilt: 0,               // always top-down imagery (45-degree views would shift markers off their buildings)
         restriction: {
             latLngBounds: restrictionBounds,
             strictBounds: true
@@ -214,47 +176,136 @@ async function initMap() {
 
     renderBuildingMarkers();
     renderAccessibilityFeatures();
-    renderAccessibleRoutes();
+    if (typeof initMapLabels === "function") initMapLabels(mainMapInstance);
     wireUpLayerToggles();
     wireUpSearchAndFilters();
 }
 
-// Places a marker for every entry in ACCESSIBILITY_FEATURES, using a color/icon per type
+// Places a marker for every entry in ACCESSIBILITY_FEATURES (defined in accessibility-data.js).
+// Marker artwork lives in map-icons.js. Markers are created hidden; refreshFeatureVisibility()
+// decides which ones show, based on the layer checkboxes and the current zoom level.
 function renderAccessibilityFeatures() {
-    ACCESSIBILITY_FEATURES.forEach(feature => {
+    const features = (typeof ACCESSIBILITY_FEATURES !== "undefined") ? ACCESSIBILITY_FEATURES : [];
+    if (features.length === 0) {
+        console.warn("No accessibility features loaded — is accessibility-data.js included before map.js?");
+    }
+
+    layerCheckboxes = {};
+    document.querySelectorAll(".layer-checkbox").forEach(cb => {
+        layerCheckboxes[cb.getAttribute("data-layer-type")] = cb;
+    });
+
+    const haveArtwork = (typeof getFeatureIcon === "function");
+
+    // One shared popup, so opening a new one closes the previous one
+    const featureInfoWindow = new google.maps.InfoWindow();
+
+    features.forEach(feature => {
         const config = LAYER_ICON_CONFIG[feature.type];
         if (!config) {
             console.warn(`Unknown accessibility feature type "${feature.type}" — skipping.`);
             return;
         }
 
-        const marker = new google.maps.Marker({
-            position: { lat: feature.lat, lng: feature.lng },
-            map: mainMapInstance,
-            title: feature.description || feature.type,
-            icon: {
+        const isRoute = ROUTE_LAYER_TYPES.includes(feature.type);
+
+        // Routes are drawn as small dots; everything else uses the pin/badge artwork
+        let icon = haveArtwork && !isRoute ? getFeatureIcon(feature.type, false) : null;
+        if (!icon) {
+            icon = {
                 path: google.maps.SymbolPath.CIRCLE,
-                scale: 8,
+                scale: isRoute ? 5 : 7,
                 fillColor: config.color,
                 fillOpacity: 1,
                 strokeColor: "#ffffff",
-                strokeWeight: 2
-            }
+                strokeWeight: 1.5
+            };
+        }
+
+        const marker = new google.maps.Marker({
+            position: { lat: feature.lat, lng: feature.lng },
+            map: null,
+            title: feature.title,
+            icon: icon,
+            zIndex: isRoute ? 10 : 100
         });
 
-        const infoWindow = new google.maps.InfoWindow({
-            content: `
-                <div style="font-family: sans-serif; padding: 4px; max-width: 220px;">
-                    <strong>${escapeHtml(feature.building || "")}</strong>
-                    <p style="margin: 4px 0 0 0; font-size: 12px; color: #334155;">${escapeHtml(feature.description || "")}</p>
+        marker.addListener("click", () => {
+            const buildingLine = feature.building
+                ? `<div style="font-size: 12px; color: #475569; margin-bottom: 4px;">${escapeHtml(feature.building)}</div>`
+                : "";
+            const descriptionLine = feature.description
+                ? `<p style="margin: 0; font-size: 12px; color: #334155; line-height: 1.4;">${escapeHtml(feature.description)}</p>`
+                : "";
+            const routeNote = isRoute
+                ? `<p style="margin: 6px 0 0 0; font-size: 11px; color: #64748b; font-style: italic;">This marks one point along the route — the full path isn't in the data yet.</p>`
+                : "";
+
+            featureInfoWindow.setContent(`
+                <div style="font-family: sans-serif; padding: 4px; max-width: 240px;">
+                    <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #475569;">
+                        <span style="display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: ${config.color}; margin-right: 6px;"></span>${escapeHtml(config.label)}
+                    </div>
+                    <h4 style="margin: 4px 0; font-size: 14px; color: #0f172a;">${escapeHtml(feature.title)}</h4>
+                    ${buildingLine}
+                    ${descriptionLine}
+                    ${routeNote}
                 </div>
-            `
+            `);
+            featureInfoWindow.open({ anchor: marker, map: mainMapInstance });
         });
 
-        marker.addListener("click", () => infoWindow.open({ anchor: marker, map: mainMapInstance }));
-
-        accessibilityMarkers.push({ marker, type: feature.type });
+        accessibilityMarkers.push({ marker, type: feature.type, isRoute, large: false });
     });
+
+    const sourceNote = document.getElementById("layers-source-note");
+    if (sourceNote && typeof ACCESSIBILITY_DATA_SOURCE !== "undefined") {
+        sourceNote.textContent = `Zoom in to see these on the map. Source: ${ACCESSIBILITY_DATA_SOURCE}. Route layers show one point per route; full paths aren't available yet.`;
+    }
+
+    createZoomHint();
+    mainMapInstance.addListener("zoom_changed", refreshFeatureVisibility);
+    refreshFeatureVisibility();
+}
+
+// Shows/hides each feature marker: a layer's markers appear only when its checkbox is on
+// AND the map is zoomed in far enough (FEATURE_MIN_ZOOM in map-icons.js). Also swaps
+// pins to their larger size when zoomed in close.
+function refreshFeatureVisibility() {
+    if (!mainMapInstance) return;
+    const zoom = mainMapInstance.getZoom();
+    const minZoomFor = type => (typeof FEATURE_MIN_ZOOM !== "undefined" && FEATURE_MIN_ZOOM[type] !== undefined) ? FEATURE_MIN_ZOOM[type] : 17;
+    const wantLarge = (typeof FEATURE_LARGE_ICON_ZOOM !== "undefined") && zoom >= FEATURE_LARGE_ICON_ZOOM;
+    let lowestZoomNeeded = Infinity;
+
+    accessibilityMarkers.forEach(entry => {
+        const checkbox = layerCheckboxes[entry.type];
+        const layerOn = checkbox ? checkbox.checked : true;
+        const minZoom = minZoomFor(entry.type);
+        if (layerOn) lowestZoomNeeded = Math.min(lowestZoomNeeded, minZoom);
+
+        const show = layerOn && zoom >= minZoom;
+        if (show && !entry.isRoute && typeof getFeatureIcon === "function" && entry.large !== wantLarge) {
+            entry.marker.setIcon(getFeatureIcon(entry.type, wantLarge));
+            entry.large = wantLarge;
+        }
+        entry.marker.setMap(show ? mainMapInstance : null);
+    });
+
+    const hint = document.getElementById("zoom-hint");
+    if (hint) hint.hidden = !(lowestZoomNeeded !== Infinity && zoom < lowestZoomNeeded);
+}
+
+// The little "Zoom in to see accessibility features" chip at the top of the map
+function createZoomHint() {
+    const wrapper = document.querySelector(".map-wrapper");
+    if (!wrapper || document.getElementById("zoom-hint")) return;
+    const hint = document.createElement("div");
+    hint.id = "zoom-hint";
+    hint.className = "zoom-hint";
+    hint.setAttribute("role", "status");
+    hint.textContent = "Zoom in to see accessibility features";
+    wrapper.appendChild(hint);
 }
 
 // Places a clickable marker for every building with a known location, showing its
@@ -273,11 +324,11 @@ function renderBuildingMarkers() {
             title: bName + (hasDocumentedADA ? " (ADA info available)" : ""),
             icon: {
                 path: google.maps.SymbolPath.CIRCLE,
-                scale: 11,
+                scale: 6,
                 fillColor: hasDocumentedADA ? "#000000" : "#003F87",
                 fillOpacity: 1,
                 strokeColor: "#ffffff",
-                strokeWeight: 2.5
+                strokeWeight: 2
             },
             zIndex: 500 // keep building markers above report/accessibility pins so they're easy to click
         });
@@ -311,25 +362,11 @@ function renderBuildingMarkers() {
 // Wires up the sidebar checkboxes to show/hide markers by feature type
 function wireUpLayerToggles() {
     document.querySelectorAll(".layer-checkbox").forEach(checkbox => {
-        checkbox.addEventListener("change", () => {
-            const layerType = checkbox.getAttribute("data-layer-type");
-            const isVisible = checkbox.checked;
-
-            accessibilityMarkers
-                .filter(entry => entry.type === layerType)
-                .forEach(entry => entry.marker.setMap(isVisible ? mainMapInstance : null));
-        });
+        checkbox.addEventListener("change", refreshFeatureVisibility);
     });
 
     wireUpMobileViewToggle();
 
-    const routesCheckbox = document.getElementById("routes-checkbox");
-    if (routesCheckbox) {
-        routesCheckbox.addEventListener("change", () => {
-            const isVisible = routesCheckbox.checked;
-            routePolylines.forEach(polyline => polyline.setMap(isVisible ? mainMapInstance : null));
-        });
-    }
 }
 
 // Mobile-only Map/List toggle: switches which pane (the map or the sidebar list)
@@ -455,7 +492,8 @@ async function loadCampusReports() {
                 fillOpacity: 1,
                 strokeColor: "#ffffff",
                 strokeWeight: 2
-            }
+            },
+            zIndex: 600 // reported issues always draw above buildings (500) and features (100)
         });
 
         // Map InfoWindow

@@ -11,6 +11,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="map.css">
+    <link rel="stylesheet" href="map-labels.css">
 </head>
 <body>
 
@@ -72,34 +73,31 @@
                 <summary class="accessibility-layers-title">Accessibility Layers</summary>
                 <div class="layer-toggle-group" role="group" aria-label="Accessibility layer toggles">
                     <label class="layer-toggle">
-                        <input type="checkbox" class="layer-checkbox" data-layer-type="automatic_door" checked>
-                        <span class="layer-swatch" style="background-color: #007AC8;" aria-hidden="true"></span> Automatic Doors
+                        <input type="checkbox" class="layer-checkbox" data-layer-type="accessible_entrance" checked>
+                        <span class="layer-swatch" style="background-color: #6D3FB2;" aria-hidden="true"></span> Accessible Entrances
                     </label>
                     <label class="layer-toggle">
                         <input type="checkbox" class="layer-checkbox" data-layer-type="accessible_parking" checked>
-                        <span class="layer-swatch" style="background-color: #7c3aed;" aria-hidden="true"></span> Accessible Parking
+                        <span class="layer-swatch" style="background-color: #1E63C8;" aria-hidden="true"></span> Accessible Parking
                     </label>
                     <label class="layer-toggle">
                         <input type="checkbox" class="layer-checkbox" data-layer-type="elevator" checked>
-                        <span class="layer-swatch" style="background-color: #006B3F;" aria-hidden="true"></span> Elevators
-                    </label>
-                    <label class="layer-toggle">
-                        <input type="checkbox" class="layer-checkbox" data-layer-type="ramp" checked>
-                        <span class="layer-swatch" style="background-color: #FFC61E;" aria-hidden="true"></span> Ramps
+                        <span class="layer-swatch" style="background-color: #ffffff; border: 2px solid #1C2023;" aria-hidden="true"></span> Elevators
                     </label>
                     <label class="layer-toggle">
                         <input type="checkbox" class="layer-checkbox" data-layer-type="accessible_restroom" checked>
-                        <span class="layer-swatch" style="background-color: #0EA5E9;" aria-hidden="true"></span> Accessible Restrooms
+                        <span class="layer-swatch" style="background-color: #1C2023;" aria-hidden="true"></span> Accessible Restrooms
                     </label>
                     <label class="layer-toggle">
-                        <input type="checkbox" class="layer-checkbox" data-layer-type="construction" checked>
-                        <span class="layer-swatch" style="background-color: #CC2D30;" aria-hidden="true"></span> Construction Zones
+                        <input type="checkbox" class="layer-checkbox" data-layer-type="ada_route">
+                        <span class="layer-swatch" style="background-color: #003F87;" aria-hidden="true"></span> Accessible Route Points
                     </label>
                     <label class="layer-toggle">
-                        <input type="checkbox" id="routes-checkbox" checked>
-                        <span class="layer-swatch" style="background-color: #003F87;" aria-hidden="true"></span> Accessible Routes
+                        <input type="checkbox" class="layer-checkbox" data-layer-type="functional_route">
+                        <span class="layer-swatch" style="background-color: #F97316;" aria-hidden="true"></span> Functionally Accessible Route Points
                     </label>
                 </div>
+                <p class="layers-note" id="layers-source-note"></p>
             </details>
 
             <div class="reports-list" id="reports-feed">
@@ -129,6 +127,9 @@
 
     <!-- 4. Script Execution Order -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="accessibility-data.js"></script>
+    <script src="map-icons.js"></script>
+    <script src="map-labels.js"></script>
     <script src="map.js"></script>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAQezXN5mS8XTQCS4gWw5EbBDF4uRjkkVg&callback=initMap" async defer></script>
 
