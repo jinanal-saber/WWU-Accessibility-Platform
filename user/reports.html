@@ -17,7 +17,10 @@
 
     <!-- Shared Navigation Bar -->
     <header class="navbar">
-        <nav class="nav-left" aria-label="Primary">
+        <button type="button" class="mobile-menu-toggle" id="mobile-menu-toggle" aria-expanded="false" aria-controls="nav-left" aria-label="Open menu">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+        <nav class="nav-left" id="nav-left" aria-label="Primary">
             <a href="index.html" class="nav-btn">Home</a>
             <a href="map.html" class="nav-btn">Map</a>
             <a href="reports.html" class="nav-btn active" aria-current="page">Recent Reports</a>
@@ -96,6 +99,7 @@
 
     <!-- Supabase CDN Driver & Script -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="mobile-nav.js"></script>
     <script src="reports.js"></script>
 </body>
 </html>

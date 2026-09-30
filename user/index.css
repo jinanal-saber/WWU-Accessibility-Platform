@@ -210,6 +210,12 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Right Group (Logo) */
+/* Hidden by default (desktop); the mobile media query below switches this
+   to display: flex only under 768px. */
+.mobile-menu-toggle {
+    display: none;
+}
+
 .nav-right {
     display: flex;
     align-items: center;
@@ -228,6 +234,7 @@ h1, h2, h3, h4, h5, h6 {
     .navbar {
         padding: 0 12px;
         height: 56px;
+        position: relative;   /* anchors the dropdown panel's "top: 56px" positioning */
     }
 
     .nav-center {
@@ -239,42 +246,62 @@ h1, h2, h3, h4, h5, h6 {
         font-size: 11px;
     }
 
+    /* Mobile nav dropdown: the hamburger toggle sits in the compact bar; the actual
+       links live in a panel that drops down below it when opened (toggled by
+       mobile-nav.js, which adds/removes the "open" class on #nav-left). */
+    .mobile-menu-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        background: transparent;
+        border: none;
+        color: var(--white);
+        font-size: 18px;
+        cursor: pointer;
+        border-radius: 6px;
+        flex-shrink: 0;
+    }
+
+    .mobile-menu-toggle:hover {
+        background-color: rgba(255, 255, 255, 0.15);
+    }
+
     .nav-left {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        flex-wrap: nowrap;
-        scrollbar-width: none;
-    }
-
-    /* A faint gradient at the right edge of nav-left itself hints there's more to
-       scroll to, since the scrollbar is hidden below -- otherwise a link sitting just
-       off-screen (like "Get Notified", the last one before Admin) has no visible sign
-       it exists. Anchored to nav-left (not the whole navbar), so it doesn't shade over
-       the always-visible Admin button, and it stays pinned to this edge rather than
-       scrolling away with the links underneath it. */
-    .nav-left {
-        position: relative;
-    }
-
-    .nav-left::after {
-        content: "";
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        right: 0;
-        width: 24px;
-        pointer-events: none;
-        background: linear-gradient(to right, transparent, rgba(0, 0, 0, 0.3));
-    }
-
-    .nav-left::-webkit-scrollbar {
         display: none;
+        position: absolute;
+        top: 56px;              /* sits right below the 56px-tall mobile navbar */
+        left: 0;
+        right: 0;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0;
+        background-color: var(--dark-blue);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        z-index: 1500;
+        max-height: calc(100vh - 56px);
+        overflow-y: auto;
+    }
+
+    .nav-left.open {
+        display: flex;
+    }
+
+    .nav-left .nav-btn {
+        width: 100%;
+        padding: 15px 20px;
+        font-size: 14px;
+        text-align: left;
+        justify-content: flex-start;
+        border-radius: 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
     }
 
     .nav-btn-admin {
-        flex-shrink: 0;
         padding: 6px 10px;
         font-size: 11px;
+        flex-shrink: 0;
     }
 
     .nav-btn-admin span {

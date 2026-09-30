@@ -105,27 +105,45 @@ async function runModerationScan() {
 
     const duplicateFlags = findDuplicateFlags(allReports);
     const newlyFlagged = [];
+    const newlyCleared = [];
 
-    // Sequential (not parallel) so we don't fire a burst of simultaneous API calls
-    // at your Anthropic account — fine for admin-triggered scans of a small report list
-    for (const report of unreviewed) {
-        // Cheap structured check first; only call the AI if it's not already a duplicate
-        const duplicateFlag = duplicateFlags[report.id];
-        const flag = duplicateFlag || await checkSpamOrVagueViaAI(report);
+    // Checked in small concurrent batches (5 at a time) rather than one at a time —
+    // waiting for 20+ sequential API calls could take the better part of a minute.
+    // Still far gentler than firing every request at once, which risks tripping a rate
+    // limit on your Anthropic account.
+    const BATCH_SIZE = 5;
+    for (let i = 0; i < unreviewed.length; i += BATCH_SIZE) {
+        const batch = unreviewed.slice(i, i + BATCH_SIZE);
 
-        if (flag) {
-            report.flag_reason = flag.reason;
-            report.flag_confidence = flag.confidence;
-            report.flag_analysis = flag.analysis;
-            report.flag_recommendation = flag.recommendation;
-            report.flag_status = "pending";
-            newlyFlagged.push(report);
+        const results = await Promise.all(batch.map(async report => {
+            // Cheap structured check first; only call the AI if it's not already a duplicate
+            const duplicateFlag = duplicateFlags[report.id];
+            const flag = duplicateFlag || await checkSpamOrVagueViaAI(report);
+            return { report, flag };
+        }));
+
+        for (const { report, flag } of results) {
+            if (flag) {
+                report.flag_reason = flag.reason;
+                report.flag_confidence = flag.confidence;
+                report.flag_analysis = flag.analysis;
+                report.flag_recommendation = flag.recommendation;
+                report.flag_status = "pending";
+                newlyFlagged.push(report);
+            } else {
+                // Nothing wrong with this one — but it still needs a marker saved, or it'll
+                // look "unreviewed" again next time and get sent to the AI a second time.
+                // Without this, EVERY clean report gets re-scanned on every single page visit,
+                // forever, which is the actual cause of "it scans everything every time".
+                report.flag_status = "clear";
+                newlyCleared.push(report);
+            }
         }
     }
 
     // Persist newly-found flags so they don't need re-scanning (and re-explaining) every visit
-    for (const report of newlyFlagged) {
-        await _supabase
+    await Promise.all(newlyFlagged.map(report =>
+        _supabase
             .from('reports')
             .update({
                 flag_reason: report.flag_reason,
@@ -134,8 +152,16 @@ async function runModerationScan() {
                 flag_recommendation: report.flag_recommendation,
                 flag_status: report.flag_status
             })
-            .eq('id', report.id);
-    }
+            .eq('id', report.id)
+    ));
+
+    // Persist the "checked, nothing wrong" marker too — this is the actual fix
+    await Promise.all(newlyCleared.map(report =>
+        _supabase
+            .from('reports')
+            .update({ flag_status: report.flag_status })
+            .eq('id', report.id)
+    ));
 
     allFlaggedReports = allReports.filter(r => r.flag_reason);
 
