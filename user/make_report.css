@@ -261,6 +261,11 @@ body {
     display: flex;
     flex-direction: column;
     gap: 6px;
+    /* Flex/grid items default to a minimum width based on their content, not their
+       assigned space -- a long dropdown option (e.g. "Fairhaven Academic Building /
+       Fairhaven College (FA)") can force this wider than its grid column, pushing it
+       past the edge of the form on narrow screens. This lets it shrink properly instead. */
+    min-width: 0;
 }
 
 .form-group.full-width {
