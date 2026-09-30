@@ -402,6 +402,135 @@ window.selectBuildingFromMap = function(bName) {
     }
 };
 
+// Searchable front-end for the building <select>. Typing filters a dropdown list;
+// picking an item sets the real select's value and fires a real "change" event on it,
+// so every existing listener (room population, map-click sync, the ADA popup's
+// selectBuildingFromMap) keeps working exactly as before — they all still just react
+// to the same underlying <select>, this only changes how a person interacts with it.
+function wireUpBuildingCombobox() {
+    const searchInput = document.getElementById("form-building-search");
+    const listbox = document.getElementById("form-building-listbox");
+    const realSelect = document.getElementById("form-building-select");
+    if (!searchInput || !listbox || !realSelect) return;
+
+    let activeIndex = -1;
+
+    function getOptions() {
+        return Array.from(realSelect.options).filter(opt => opt.value !== "");
+    }
+
+    function getSelectedLabel() {
+        const opt = realSelect.options[realSelect.selectedIndex];
+        return opt && opt.value ? opt.textContent : "";
+    }
+
+    function renderList(query) {
+        const q = query.trim().toLowerCase();
+        const matches = getOptions().filter(opt => opt.textContent.toLowerCase().includes(q));
+        listbox.innerHTML = "";
+        activeIndex = -1;
+
+        if (matches.length === 0) {
+            const empty = document.createElement("div");
+            empty.className = "building-listbox-empty";
+            empty.textContent = "No buildings match your search.";
+            listbox.appendChild(empty);
+            return;
+        }
+
+        matches.forEach((opt, i) => {
+            const item = document.createElement("div");
+            item.className = "building-listbox-item";
+            item.setAttribute("role", "option");
+            item.id = "building-option-" + i;
+            item.dataset.value = opt.value;
+            item.textContent = opt.textContent;
+            // mousedown (not click) so this fires before the input's blur handler closes the list
+            item.addEventListener("mousedown", e => {
+                e.preventDefault();
+                selectBuildingOption(opt.value);
+            });
+            listbox.appendChild(item);
+        });
+    }
+
+    function selectBuildingOption(value) {
+        realSelect.value = value;
+        realSelect.dispatchEvent(new Event("change")); // updates searchInput.value too, via the listener below
+        closeList();
+    }
+
+    function openList() {
+        listbox.hidden = false;
+        searchInput.setAttribute("aria-expanded", "true");
+        renderList(searchInput.value === getSelectedLabel() ? "" : searchInput.value);
+    }
+
+    function closeList() {
+        listbox.hidden = true;
+        searchInput.setAttribute("aria-expanded", "false");
+        searchInput.removeAttribute("aria-activedescendant");
+        activeIndex = -1;
+    }
+
+    function updateActiveDescendant(items) {
+        items.forEach(i => i.classList.remove("active"));
+        if (items[activeIndex]) {
+            items[activeIndex].classList.add("active");
+            searchInput.setAttribute("aria-activedescendant", items[activeIndex].id);
+            if (items[activeIndex].scrollIntoView) items[activeIndex].scrollIntoView({ block: "nearest" });
+        }
+    }
+
+    // Keeps the visible search box in sync no matter HOW the real select's value changes —
+    // a click in this combobox, a keyboard selection here, or an external call like
+    // selectBuildingFromMap() from the map's ADA popup button
+    realSelect.addEventListener("change", () => {
+        searchInput.value = getSelectedLabel();
+    });
+
+    searchInput.addEventListener("focus", openList);
+
+    searchInput.addEventListener("input", () => {
+        listbox.hidden = false;
+        searchInput.setAttribute("aria-expanded", "true");
+        renderList(searchInput.value);
+    });
+
+    searchInput.addEventListener("blur", () => {
+        // Give a mousedown-selected item's handler a moment to run first
+        setTimeout(() => {
+            closeList();
+            // Don't leave unselected, half-typed search text sitting in the field
+            const currentLabel = getSelectedLabel();
+            if (searchInput.value !== currentLabel) searchInput.value = currentLabel;
+        }, 120);
+    });
+
+    searchInput.addEventListener("keydown", e => {
+        if (e.key === "ArrowDown") {
+            e.preventDefault();
+            if (listbox.hidden) openList();
+            const items = listbox.querySelectorAll('[role="option"]');
+            activeIndex = Math.min(activeIndex + 1, items.length - 1);
+            updateActiveDescendant(items);
+        } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            const items = listbox.querySelectorAll('[role="option"]');
+            activeIndex = Math.max(activeIndex - 1, 0);
+            updateActiveDescendant(items);
+        } else if (e.key === "Enter") {
+            e.preventDefault();
+            const items = listbox.querySelectorAll('[role="option"]');
+            if (activeIndex >= 0 && items[activeIndex]) {
+                selectBuildingOption(items[activeIndex].dataset.value);
+            }
+        } else if (e.key === "Escape") {
+            closeList();
+        }
+    });
+}
+
 // Populate Building Dropdowns & Bind Logic
 function populateBuildingSelect() {
     const bSelect = document.getElementById("form-building-select");
@@ -425,6 +554,8 @@ function populateBuildingSelect() {
     outdoorsOpt.value = "OUTDOORS_OTHER";
     outdoorsOpt.textContent = "🌳 Outdoors / Other Location (click map to place pin)";
     bSelect.appendChild(outdoorsOpt);
+
+    wireUpBuildingCombobox();
 
     bSelect.addEventListener("change", (e) => {
         const selectedB = e.target.value;
@@ -506,14 +637,33 @@ document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("standalone-report-form");
 
     if (form) {
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const submitBtnOriginalHTML = submitBtn ? submitBtn.innerHTML : "";
+
+        function setSubmitting(isSubmitting) {
+            if (!submitBtn) return;
+            submitBtn.disabled = isSubmitting;
+            submitBtn.innerHTML = isSubmitting
+                ? '<i class="fa-solid fa-spinner fa-spin"></i> Submitting...'
+                : submitBtnOriginalHTML;
+        }
+
         form.addEventListener("submit", async (e) => {
             e.preventDefault();
+
+            // Guards against the actual bug being fixed here: an accidental double-click
+            // firing this handler a second time before the first submission has finished.
+            // Disabling happens synchronously, before any "await", so by the time a second
+            // click's event could be processed, this has already run and blocked it.
+            if (submitBtn && submitBtn.disabled) return;
+            setSubmitting(true);
 
             const latVal = parseFloat(document.getElementById("form-lat").value);
             const lngVal = parseFloat(document.getElementById("form-lng").value);
 
             if (!latVal || !lngVal) {
                 alert("Please select a location on the map or pick a building first.");
+                setSubmitting(false);
                 return;
             }
 
@@ -522,6 +672,7 @@ document.addEventListener("DOMContentLoaded", () => {
             );
             if (distFromCampus > MAX_CAMPUS_RADIUS_METERS) {
                 alert("This report's location is outside the WWU campus area and cannot be submitted. Please select a location within campus.");
+                setSubmitting(false);
                 return;
             }
 
@@ -638,6 +789,7 @@ document.addEventListener("DOMContentLoaded", () => {
             } catch (err) {
                 console.error("Error submitting report:", err);
                 alert("Failed to submit report: " + err.message);
+                setSubmitting(false);
             }
         });
     }

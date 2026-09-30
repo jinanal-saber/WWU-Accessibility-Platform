@@ -64,10 +64,18 @@
                         <input type="text" id="form-title" class="form-control" placeholder="Brief title of the issue" required />
                     </div>
 
-                    <!-- Building Dropdown -->
-                    <div class="form-group">
-                        <label for="form-building-select">Building / Location *</label>
-                        <select id="form-building-select" class="form-control" required>
+                    <!-- Building Dropdown -- a searchable combobox rather than a plain <select>,
+                         since scrolling through 57 buildings to find one is slow. The real
+                         <select> stays in the DOM (hidden) as the actual source of truth, since
+                         other code (map clicks, the ADA popup button) already sets its value
+                         directly -- the combobox just gives it a faster, searchable front end. -->
+                    <div class="form-group building-combobox-wrapper">
+                        <label for="form-building-search">Building / Location *</label>
+                        <input type="text" id="form-building-search" class="form-control"
+                               placeholder="Search or select a building..." autocomplete="off"
+                               role="combobox" aria-expanded="false" aria-controls="form-building-listbox" aria-autocomplete="list">
+                        <div id="form-building-listbox" class="building-listbox" role="listbox" hidden></div>
+                        <select id="form-building-select" class="visually-hidden-select" aria-hidden="true" tabindex="-1">
                             <option value="">-- Select a Building --</option>
                         </select>
                     </div>

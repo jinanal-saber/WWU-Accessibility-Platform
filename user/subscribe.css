@@ -79,13 +79,13 @@ body {
 .checkbox-list-item {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
+    gap: 9px;
+    padding: 9px 12px;
     font-size: 14px;
     font-family: var(--font-body);
     color: var(--black);
     cursor: pointer;
-    min-height: 44px;               /* comfortable touch target */
+    min-height: 44px;               /* comfortable touch target, unaffected by the smaller checkbox */
     border-bottom: 1px solid var(--gray-border);
 }
 
@@ -97,10 +97,49 @@ body {
     background-color: var(--gray-light);
 }
 
+/* Custom checkbox, drawn with CSS instead of relying on the browser's native checkbox --
+   native ones render slightly differently across browsers/OSes, which is why they can
+   look a little off no matter how they're aligned. This version is pixel-exact and
+   matches the site's own color palette instead of the OS theme. */
 .checkbox-list-item input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
+    appearance: none;
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
     flex-shrink: 0;
+    margin: 0;
+    border: 1.5px solid var(--gray-border);
+    border-radius: 4px;
+    background-color: var(--white);
+    cursor: pointer;
+    position: relative;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.checkbox-list-item input[type="checkbox"]:hover {
+    border-color: var(--blue);
+}
+
+.checkbox-list-item input[type="checkbox"]:checked {
+    background-color: var(--dark-blue);
+    border-color: var(--dark-blue);
+}
+
+.checkbox-list-item input[type="checkbox"]:checked::after {
+    content: "";
+    position: absolute;
+    left: 4.5px;
+    top: 1.5px;
+    width: 4px;
+    height: 8px;
+    border: solid var(--white);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+/* A checked row gets a faint tint, so it's easy to scan which ones are picked at a glance */
+.checkbox-list-item:has(input[type="checkbox"]:checked) {
+    background-color: rgba(0, 63, 135, 0.05);
 }
 
 .field-hint {
@@ -237,4 +276,15 @@ body {
     .subscribe-form {
         padding: 20px;
     }
+}
+
+.building-search-input {
+    margin-bottom: 8px;
+}
+
+.checkbox-list-empty-msg {
+    padding: 14px 12px;
+    font-size: 13px;
+    color: var(--gray);
+    text-align: center;
 }

@@ -26,7 +26,7 @@
             <a href="make_report.html" class="nav-btn" id="report-issue-nav-btn">Report Issue</a>
             <a href="subscribe.html" class="nav-btn active" aria-current="page">Get Notified</a>
         </nav>
-        <div class="nav-center">WESTERN WASHINGTON UNIVERSITY</div>
+        <div class="nav-center"></div>
         <div class="nav-right">
             <a href="../Admin/admin.html" class="nav-btn-admin"><i class="fa-solid fa-lock"></i> <span>Admin Login</span></a>
         </div>
@@ -58,6 +58,8 @@
 
                 <div class="form-group">
                     <label id="sub-buildings-label">Buildings <span class="optional-label">(optional — leave blank for any building)</span></label>
+                    <label for="sub-buildings-search" class="sr-only">Search buildings</label>
+                    <input type="text" id="sub-buildings-search" class="form-control building-search-input" placeholder="Search buildings..." autocomplete="off">
                     <!-- Checkboxes rather than a <select multiple>: multi-select dropdowns don't work
                          reliably via touch on phones (no Ctrl/Cmd key to hold), so this is the version
                          that actually works on every device -->

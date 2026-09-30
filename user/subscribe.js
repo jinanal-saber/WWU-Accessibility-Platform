@@ -2,15 +2,28 @@ const SUPABASE_URL = "https://tdhfysffpdczdnsikvrf.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_yz9UL8JKWSLXCCVLOjbJEg_2gusRAA5";
 const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Kept in sync with make_report.js's WWU_BUILDINGS_DATA keys
+// The full 57-building list from make_report.js's WWU_BUILDINGS_DATA — previously this
+// only had the 22 buildings with verified map coordinates, which meant someone couldn't
+// subscribe to a building that just hadn't been mapped yet. Following a building for
+// notifications doesn't depend on its map position, so there's no reason to leave any out.
 const WWU_BUILDING_NAMES = [
-    "Communications Facility (CF)", "Miller Hall (MH)", "Academic Instructional West (AW)",
-    "Arntzen Hall (AH)", "Parks Hall (PH)", "Carver (CV)", "Wilson Library (WL)",
-    "Bond Hall (BH)", "Environmental Studies (ES)", "Ross Engineering Technology (ET)",
-    "Viking Union (VU)", "Alma Clark Glass Hall (CG)", "Biology (BI)", "Buchanan Towers (BT)",
-    "Fairhaven Academic Building / Fairhaven College (FA)", "Fairhaven Complex (FX)",
-    "Fraser Hall (FR)", "Humanities Building (HU)", "Mathes Hall (MA)", "Nash Hall (NA)",
-    "Edens Hall (EH)", "Performing Arts Center (PA)"
+    "Academic Instructional Center (AI)", "Academic Instructional West (AW)",
+    "Administrative Services Center (AC)", "Alma Clark Glass Hall (CG)", "Alumni House (AL)",
+    "Archives Building (AB)", "Arntzen Hall (AH)", "Art Annex (AA)", "Biology (BI)",
+    "Birnam Wood (Buildings 1-7) (BW)", "Birnam Wood Community Building (BC)",
+    "Birnam Wood Laundry Building (BL)", "Bond Hall (BH)", "Buchanan Towers (BT)", "Campus Services (CS)",
+    "Canada House (CA)", "Carver (CV)", "College Hall (CH)", "Commissary (CM)",
+    "Communications Facility (CF)", "Edens Hall (EH)", "Edens Hall North (EN)", "Environmental Studies (ES)",
+    "Fairhaven Academic Building / Fairhaven College (FA)", "Fairhaven Cabin - South (FS)",
+    "Fairhaven Complex (FX)", "Fine Arts (FI)", "Fraser Hall (FR)", "Haggard Hall (HH)",
+    "Higginson Hall (HG)", "High Street Hall (HS)", "Humanities Building (HU)",
+    "Interdisciplinary Science Building (IS)", "Kaiser Borsari Hall (KB)", "Mathes Hall (MA)",
+    "Miller Hall (MH)", "Morse Hall / Chemistry Building (CB)", "Nash Hall (NA)", "Old Main (OM)",
+    "Parks Hall (PH)", "Performing Arts Center (PA)", "Physical Plant (PP)", "Ridgeway Alpha (RA)",
+    "Ridgeway Beta (RB)", "Ridgeway Commons (RC)", "Ridgeway Delta (RD)", "Ridgeway Gamma (RG)",
+    "Ridgeway Kappa (RK)", "Ridgeway Omega (RO)", "Ridgeway Sigma (RS)", "Ross Engineering Technology (ET)",
+    "SMATE / Science Lecture (SL)", "Steam Plant (SP)", "Viking Commons (VC)", "Viking Union (VU)",
+    "Wade King Recreation Center (SV)", "Wilson Library (WL)"
 ];
 
 // Checkboxes, not a <select multiple> — multi-select dropdowns don't work reliably via
@@ -23,6 +36,39 @@ function populateBuildingOptions() {
         label.className = "checkbox-list-item";
         label.innerHTML = `<input type="checkbox" value="${name}"> ${name}`;
         container.appendChild(label);
+    });
+}
+
+// Filters which building rows are visible as the user types — a checked box that gets
+// hidden by the filter stays checked underneath (getSelectedValues reads all :checked
+// inputs regardless of visibility), so searching never loses a selection someone already made.
+function wireUpBuildingSearch() {
+    const searchInput = document.getElementById("sub-buildings-search");
+    const container = document.getElementById("sub-buildings");
+    if (!searchInput || !container) return;
+
+    searchInput.addEventListener("input", () => {
+        const query = searchInput.value.trim().toLowerCase();
+        const items = container.querySelectorAll(".checkbox-list-item");
+        let anyVisible = false;
+
+        items.forEach(item => {
+            const matches = item.textContent.trim().toLowerCase().includes(query);
+            item.style.display = matches ? "" : "none";
+            if (matches) anyVisible = true;
+        });
+
+        let emptyMsg = container.querySelector(".checkbox-list-empty-msg");
+        if (!anyVisible) {
+            if (!emptyMsg) {
+                emptyMsg = document.createElement("p");
+                emptyMsg.className = "checkbox-list-empty-msg";
+                emptyMsg.textContent = "No buildings match your search.";
+                container.appendChild(emptyMsg);
+            }
+        } else if (emptyMsg) {
+            emptyMsg.remove();
+        }
     });
 }
 
@@ -56,6 +102,7 @@ function clearError() {
 
 document.addEventListener("DOMContentLoaded", () => {
     populateBuildingOptions();
+    wireUpBuildingSearch();
     wireUpAllNotificationsToggle();
 
     const form = document.getElementById("subscribe-form");

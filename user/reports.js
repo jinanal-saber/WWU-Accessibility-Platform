@@ -389,13 +389,44 @@ async function handleLikeClick(report) {
     }
 }
 
+// Strips a report's room/description suffix (the "[...]" part) so reports in the same
+// building group under one filter entry, e.g. "Miller Hall (MH) [204]" and
+// "Miller Hall (MH) [Stairwell]" both become "Miller Hall (MH)".
+function normalizeBuildingForFilter(rawBuilding) {
+    return (rawBuilding || "").replace(/\s*\[.*?\]\s*$/, "").trim();
+}
+
+// Populated from whatever buildings actually appear among the loaded reports, not the
+// full 57-building list — most buildings won't have a report at any given time, so
+// listing all of them would mostly be empty, unhelpful options.
+function populateBuildingFilterDropdown() {
+    const buildingDropdown = document.getElementById("building-filter");
+    if (!buildingDropdown) return;
+
+    const distinctBuildings = [...new Set(
+        loadedReportEntries.map(entry => normalizeBuildingForFilter(entry.report.building)).filter(Boolean)
+    )].sort((a, b) => a.localeCompare(b));
+
+    buildingDropdown.innerHTML = `<option value="all">All Buildings</option>`;
+    distinctBuildings.forEach(name => {
+        const opt = document.createElement("option");
+        opt.value = name;
+        opt.textContent = name;
+        buildingDropdown.appendChild(opt);
+    });
+}
+
 function wireUpSearchAndFilters() {
     const searchInput = document.getElementById("search-input");
+    const buildingDropdown = document.getElementById("building-filter");
     const categoryDropdown = document.getElementById("category-filter");
     const severityDropdown = document.getElementById("severity-filter");
 
+    populateBuildingFilterDropdown();
+
     const applyFilters = () => {
         const searchTerm = (searchInput && searchInput.value ? searchInput.value : "").trim().toLowerCase();
+        const buildingValue = buildingDropdown ? buildingDropdown.value : "all";
         const categoryValue = categoryDropdown ? categoryDropdown.value : "all";
         const severityValue = severityDropdown ? severityDropdown.value : "all";
 
@@ -410,10 +441,11 @@ function wireUpSearchAndFilters() {
                 (report.description && report.description.toLowerCase().includes(searchTerm)) ||
                 (report.building && report.building.toLowerCase().includes(searchTerm));
 
+            const matchesBuilding = buildingValue === "all" || normalizeBuildingForFilter(report.building) === buildingValue;
             const matchesCategory = categoryValue === "all" || report.category === categoryValue;
             const matchesSeverity = severityValue === "all" || report.severity === severityValue;
 
-            const isVisible = matchesSearch && matchesCategory && matchesSeverity;
+            const isVisible = matchesSearch && matchesBuilding && matchesCategory && matchesSeverity;
             cardEl.style.display = isVisible ? "" : "none";
             if (isVisible) visibleCount++;
         });
@@ -422,6 +454,7 @@ function wireUpSearchAndFilters() {
     };
 
     if (searchInput) searchInput.addEventListener("input", applyFilters);
+    if (buildingDropdown) buildingDropdown.addEventListener("change", applyFilters);
     if (categoryDropdown) categoryDropdown.addEventListener("change", applyFilters);
     if (severityDropdown) severityDropdown.addEventListener("change", applyFilters);
 }

@@ -607,14 +607,10 @@ h1, h2, h3, h4, h5, h6 {
         border-bottom: 1px solid rgba(255, 255, 255, 0.12);
     }
 
+    /* Hidden entirely on mobile rather than shrunk to just the lock icon — admin access
+       isn't something the public-facing mobile experience needs to surface. */
     .nav-btn-admin {
-        padding: 6px 10px;
-        font-size: 11px;
-        flex-shrink: 0;
-    }
-
-    .nav-btn-admin span {
-        display: none; /* keep just the lock icon on very tight widths */
+        display: none;
     }
 
     .map-page-container {
