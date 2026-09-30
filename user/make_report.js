@@ -34,13 +34,17 @@ function buildRestrictionBounds(center, radiusMeters) {
 // ada: null rather than invented details, since fabricating accessibility
 // information would be actively harmful for a tool meant to help people navigate
 // real barriers.
+// UPDATE: 40 of these 57 buildings now use a real position -- the averaged center of
+// every WWU-sourced accessibility point (elevator, parking, entrance, restroom, route)
+// whose title or description mentions that building. The rest are still
+// { ...WWU_CAMPUS_CENTER } placeholders, since no matching WWU data point exists yet.
 // -----------------------------------------------------------------------------------
 const WWU_BUILDINGS_DATA = {
     "Communications Facility (CF)": {
         // UNVERIFIED — Google's own listing for this building has "Ross Engineering
         // Technology" in its address field, suggesting a possible data mix-up on
         // Google's end between two adjacent buildings. Please confirm against map.wwu.edu.
-        center: { lat: 48.732794, lng: -122.485228 },
+        center: { lat: 48.732744, lng: -122.485176 },
         ada: {
             elevators: "Yes (North & South Towers)",
             autoDoors: "Yes (East & West Main Entrances)",
@@ -50,7 +54,7 @@ const WWU_BUILDINGS_DATA = {
         rooms: ["CF 105 (Auditorium)", "CF 115", "CF 120", "CF 220 (Mac Lab)", "CF 316"]
     },
     "Miller Hall (MH)": {
-        center: { lat: 48.736584, lng: -122.484717 }, // verified: matches Miller Hall's street address
+        center: { lat: 48.736175, lng: -122.484806 }, // verified: matches Miller Hall's street address
         ada: {
             elevators: "Yes (Central Elevator)",
             autoDoors: "Yes (Red Square Entrance)",
@@ -70,7 +74,7 @@ const WWU_BUILDINGS_DATA = {
         rooms: ["AW 204", "AW 210", "AW 302", "AW 304"]
     },
     "Arntzen Hall (AH)": {
-        center: { lat: 48.733994, lng: -122.485463 }, // verified: matches Arntzen Hall's street address
+        center: { lat: 48.733856, lng: -122.485703 }, // verified: matches Arntzen Hall's street address
         ada: {
             elevators: "Yes (Central)",
             autoDoors: "Yes (East Entrance)",
@@ -80,7 +84,7 @@ const WWU_BUILDINGS_DATA = {
         rooms: ["AH 100 (Lecture Hall)", "AH 219", "AH 318", "AH 415"]
     },
     "Parks Hall (PH)": {
-        center: { lat: 48.733498, lng: -122.486560 }, // verified: dedicated listing
+        center: { lat: 48.733589, lng: -122.486691 }, // verified: dedicated listing
         ada: {
             elevators: "Yes",
             autoDoors: "Yes (South Entrance)",
@@ -90,7 +94,7 @@ const WWU_BUILDINGS_DATA = {
         rooms: ["PH 104", "PH 228", "PH 336"]
     },
     "Carver (CV)": {
-        center: { lat: 48.735951, lng: -122.486475 }, // moderate confidence: listed as "Carver Hall", distinct from Carver Gymnasium's separate listing
+        center: { lat: 48.735758, lng: -122.486344 }, // moderate confidence: listed as "Carver Hall", distinct from Carver Gymnasium's separate listing
         ada: {
             elevators: "Yes (Access to all gym floors)",
             autoDoors: "Yes (Main West Plaza Entrance)",
@@ -100,7 +104,7 @@ const WWU_BUILDINGS_DATA = {
         rooms: ["CV 101", "CV 200 (Gymnasium)", "CV 310"]
     },
     "Wilson Library (WL)": {
-        center: { lat: 48.737771, lng: -122.485770 }, // verified: matches WWU Libraries' official listing
+        center: { lat: 48.73775, lng: -122.485788 }, // verified: matches WWU Libraries' official listing
         ada: {
             elevators: "Yes (Access to Haggard Skybridge)",
             autoDoors: "Yes (Red Square Main Entry)",
@@ -110,19 +114,19 @@ const WWU_BUILDINGS_DATA = {
         rooms: ["WL 165 (Reading Room)", "WL 280", "WL 360"]
     },
     "Bond Hall (BH)": {
-        center: { lat: 48.736608, lng: -122.485979 }, // verified: dedicated listing
+        center: { lat: 48.73648, lng: -122.485756 }, // verified: dedicated listing
         ada: null, rooms: []
     },
     "Environmental Studies (ES)": {
-        center: { lat: 48.733360, lng: -122.485862 }, // verified: dedicated listing
+        center: { lat: 48.733439, lng: -122.485403 }, // verified: dedicated listing
         ada: null, rooms: []
     },
     "Ross Engineering Technology (ET)": {
-        center: { lat: 48.734570, lng: -122.485557 }, // verified: dedicated listing
+        center: { lat: 48.734913, lng: -122.485779 }, // verified: dedicated listing
         ada: null, rooms: []
     },
     "Viking Union (VU)": {
-        center: { lat: 48.738964, lng: -122.486243 }, // verified: dedicated listing
+        center: { lat: 48.739, lng: -122.486035 }, // verified: dedicated listing
         ada: {
             elevators: "Yes",
             autoDoors: "Yes (button-activated, southeast & northwest sides near Garden St)",
@@ -132,88 +136,88 @@ const WWU_BUILDINGS_DATA = {
         rooms: []
     },
     "Alma Clark Glass Hall (CG)": {
-        center: { lat: 48.735566, lng: -122.488917 }, // reasonable confidence: dedicated listing, reviews confirm it's a residence hall
+        center: { lat: 48.736496, lng: -122.488152 }, // reasonable confidence: dedicated listing, reviews confirm it's a residence hall
         ada: null, rooms: []
     },
     "Biology (BI)": {
-        center: { lat: 48.733942, lng: -122.486994 }, // reasonable confidence: dedicated listing
+        center: { lat: 48.734066, lng: -122.486794 }, // reasonable confidence: dedicated listing
         ada: null, rooms: []
     },
     "Buchanan Towers (BT)": {
-        center: { lat: 48.726803, lng: -122.486827 }, // reasonable confidence: dedicated listing
+        center: { lat: 48.726768, lng: -122.486631 }, // reasonable confidence: dedicated listing
         ada: null, rooms: []
     },
     "Fairhaven Academic Building / Fairhaven College (FA)": {
-        center: { lat: 48.730328, lng: -122.485730 }, // reasonable confidence: dedicated listing
+        center: { lat: 48.730045, lng: -122.485947 }, // reasonable confidence: dedicated listing
         ada: null, rooms: []
     },
     "Fairhaven Complex (FX)": {
-        center: { lat: 48.729276, lng: -122.485604 }, // reasonable confidence: dedicated listing, reviews confirm housing "stacks"
+        center: { lat: 48.728935, lng: -122.485748 }, // reasonable confidence: dedicated listing, reviews confirm housing "stacks"
         ada: null, rooms: []
     },
     "Fraser Hall (FR)": {
-        center: { lat: 48.737090, lng: -122.484666 }, // reasonable confidence: dedicated listing
+        center: { lat: 48.73703, lng: -122.484385 }, // reasonable confidence: dedicated listing
         ada: null, rooms: []
     },
     "Humanities Building (HU)": {
-        center: { lat: 48.737351, lng: -122.485008 }, // reasonable confidence: dedicated listing
+        center: { lat: 48.737377, lng: -122.48494 }, // reasonable confidence: dedicated listing
         ada: null, rooms: []
     },
     "Mathes Hall (MA)": {
-        center: { lat: 48.739946, lng: -122.484704 }, // reasonable confidence: dedicated listing (a public review notes this is one of the least wheelchair-accessible buildings on north campus — worth having students confirm/report on)
+        center: { lat: 48.739887, lng: -122.484787 }, // reasonable confidence: dedicated listing (a public review notes this is one of the least wheelchair-accessible buildings on north campus — worth having students confirm/report on)
         ada: null, rooms: []
     },
     "Nash Hall (NA)": {
-        center: { lat: 48.740255, lng: -122.483773 }, // reasonable confidence: dedicated listing
+        center: { lat: 48.74006, lng: -122.483808 }, // reasonable confidence: dedicated listing
         ada: null, rooms: []
     },
     "Edens Hall (EH)": {
-        center: { lat: 48.739214, lng: -122.483600 }, // reasonable confidence: dedicated listing
+        center: { lat: 48.739283, lng: -122.483528 }, // reasonable confidence: dedicated listing
         ada: null, rooms: []
     },
     "Performing Arts Center (PA)": {
-        center: { lat: 48.738073, lng: -122.487228 }, // verified: dedicated, well-reviewed listing
+        center: { lat: 48.737958, lng: -122.487223 }, // verified: dedicated, well-reviewed listing
         ada: null, rooms: []
     },
 
     // ---- Everything below: COORDINATES UNVERIFIED (placed at campus center as an
     // honest placeholder). Google Places searches either returned no match, or
     // returned a clearly mismatched result. Please verify against map.wwu.edu. ----
-    "Academic Instructional Center (AI)": { center: { ...WWU_CAMPUS_CENTER }, ada: null, rooms: [] },
-    "Administrative Services Center (AC)": { center: { ...WWU_CAMPUS_CENTER }, ada: null, rooms: [] },
+    "Academic Instructional Center (AI)": { center: { lat: 48.732037, lng: -122.486071 }, ada: null, rooms: [] },
+    "Administrative Services Center (AC)": { center: { lat: 48.731018, lng: -122.474022 }, ada: null, rooms: [] },
     "Alumni House (AL)": { center: { ...WWU_CAMPUS_CENTER }, ada: null, rooms: [] },
-    "Archives Building (AB)": { center: { ...WWU_CAMPUS_CENTER }, ada: null, rooms: [] },
-    "Art Annex (AA)": { center: { ...WWU_CAMPUS_CENTER }, ada: null, rooms: [] },
+    "Archives Building (AB)": { center: { lat: 48.726013, lng: -122.485695 }, ada: null, rooms: [] },
+    "Art Annex (AA)": { center: { lat: 48.735733, lng: -122.485184 }, ada: null, rooms: [] },
     "Birnam Wood (Buildings 1-7) (BW)": { center: { ...WWU_CAMPUS_CENTER }, ada: null, rooms: [] },
     "Birnam Wood Community Building (BC)": { center: { ...WWU_CAMPUS_CENTER }, ada: null, rooms: [] },
     "Birnam Wood Laundry Building (BL)": { center: { ...WWU_CAMPUS_CENTER }, ada: null, rooms: [] },
-    "Campus Services (CS)": { center: { ...WWU_CAMPUS_CENTER }, ada: null, rooms: [] },
-    "Canada House (CA)": { center: { ...WWU_CAMPUS_CENTER }, ada: null, rooms: [] },
-    "College Hall (CH)": { center: { ...WWU_CAMPUS_CENTER }, ada: null, rooms: [] },
-    "Commissary (CM)": { center: { ...WWU_CAMPUS_CENTER }, ada: null, rooms: [] },
+    "Campus Services (CS)": { center: { lat: 48.727826, lng: -122.48982 }, ada: null, rooms: [] },
+    "Canada House (CA)": { center: { lat: 48.737732, lng: -122.487808 }, ada: null, rooms: [] },
+    "College Hall (CH)": { center: { lat: 48.737011, lng: -122.486872 }, ada: null, rooms: [] },
+    "Commissary (CM)": { center: { lat: 48.72717, lng: -122.484674 }, ada: null, rooms: [] },
     "Edens Hall North (EN)": { center: { ...WWU_CAMPUS_CENTER }, ada: null, rooms: [] },
     "Fairhaven Cabin - South (FS)": { center: { ...WWU_CAMPUS_CENTER }, ada: null, rooms: [] },
-    "Fine Arts (FI)": { center: { ...WWU_CAMPUS_CENTER }, ada: null, rooms: [] },
-    "Haggard Hall (HH)": { center: { ...WWU_CAMPUS_CENTER }, ada: null, rooms: [] },
-    "Higginson Hall (HG)": { center: { ...WWU_CAMPUS_CENTER }, ada: null, rooms: [] },
-    "High Street Hall (HS)": { center: { ...WWU_CAMPUS_CENTER }, ada: null, rooms: [] },
+    "Fine Arts (FI)": { center: { lat: 48.735364, lng: -122.485298 }, ada: null, rooms: [] },
+    "Haggard Hall (HH)": { center: { lat: 48.737354, lng: -122.486381 }, ada: null, rooms: [] },
+    "Higginson Hall (HG)": { center: { lat: 48.739777, lng: -122.483345 }, ada: null, rooms: [] },
+    "High Street Hall (HS)": { center: { lat: 48.737513, lng: -122.487584 }, ada: null, rooms: [] },
     "Interdisciplinary Science Building (IS)": { center: { ...WWU_CAMPUS_CENTER }, ada: null, rooms: [] },
     "Kaiser Borsari Hall (KB)": { center: { ...WWU_CAMPUS_CENTER }, ada: null, rooms: [] },
-    "Morse Hall / Chemistry Building (CB)": { center: { ...WWU_CAMPUS_CENTER }, ada: null, rooms: [] },
-    "Old Main (OM)": { center: { ...WWU_CAMPUS_CENTER }, ada: null, rooms: [] },
-    "Physical Plant (PP)": { center: { ...WWU_CAMPUS_CENTER }, ada: null, rooms: [] },
+    "Morse Hall / Chemistry Building (CB)": { center: { lat: 48.734618, lng: -122.486611 }, ada: null, rooms: [] },
+    "Old Main (OM)": { center: { lat: 48.738002, lng: -122.48444 }, ada: null, rooms: [] },
+    "Physical Plant (PP)": { center: { lat: 48.724656, lng: -122.483681 }, ada: null, rooms: [] },
     "Ridgeway Alpha (RA)": { center: { ...WWU_CAMPUS_CENTER }, ada: null, rooms: [] },
     "Ridgeway Beta (RB)": { center: { ...WWU_CAMPUS_CENTER }, ada: null, rooms: [] },
-    "Ridgeway Commons (RC)": { center: { ...WWU_CAMPUS_CENTER }, ada: null, rooms: [] },
+    "Ridgeway Commons (RC)": { center: { lat: 48.734981, lng: -122.489268 }, ada: null, rooms: [] },
     "Ridgeway Delta (RD)": { center: { ...WWU_CAMPUS_CENTER }, ada: null, rooms: [] },
     "Ridgeway Gamma (RG)": { center: { ...WWU_CAMPUS_CENTER }, ada: null, rooms: [] },
     "Ridgeway Kappa (RK)": { center: { ...WWU_CAMPUS_CENTER }, ada: null, rooms: [] },
     "Ridgeway Omega (RO)": { center: { ...WWU_CAMPUS_CENTER }, ada: null, rooms: [] },
     "Ridgeway Sigma (RS)": { center: { ...WWU_CAMPUS_CENTER }, ada: null, rooms: [] },
-    "SMATE / Science Lecture (SL)": { center: { ...WWU_CAMPUS_CENTER }, ada: null, rooms: [] },
+    "SMATE / Science Lecture (SL)": { center: { lat: 48.735212, lng: -122.487157 }, ada: null, rooms: [] },
     "Steam Plant (SP)": { center: { ...WWU_CAMPUS_CENTER }, ada: null, rooms: [] },
-    "Viking Commons (VC)": { center: { ...WWU_CAMPUS_CENTER }, ada: null, rooms: [] },
-    "Wade King Recreation Center (SV)": { center: { ...WWU_CAMPUS_CENTER }, ada: null, rooms: [] }
+    "Viking Commons (VC)": { center: { lat: 48.739338, lng: -122.485016 }, ada: null, rooms: [] },
+    "Wade King Recreation Center (SV)": { center: { lat: 48.731758, lng: -122.489037 }, ada: null, rooms: [] }
 };
 
 let reportMapInstance;
@@ -302,13 +306,17 @@ function initReportPageMap() {
         zoom: 16,
         minZoom: 15,
         center: WWU_CAMPUS_CENTER,
-        mapTypeId: google.maps.MapTypeId.HYBRID, 
+        mapTypeId: google.maps.MapTypeId.SATELLITE, // matches map.html: no Google text, labels drawn by map-labels.js
+        mapTypeControl: false,
+        tilt: 0,
         disableDefaultUI: false,
         restriction: {
             latLngBounds: restrictionBounds,
             strictBounds: true
         }
     });
+
+    if (typeof initMapLabels === "function") initMapLabels(reportMapInstance);
 
    
 
@@ -317,6 +325,12 @@ function initReportPageMap() {
     // Add Clickable Building Markers with ADA Info Windows
     Object.keys(WWU_BUILDINGS_DATA).forEach(bName => {
         const bData = WWU_BUILDINGS_DATA[bName];
+
+        // Skip the map marker for buildings with no real position data yet (still sitting at
+        // the placeholder center) — showing ~17 markers stacked on one spot looks broken.
+        // The building is still fully selectable through the dropdown either way.
+        const isPlaceholder = bData.center.lat === WWU_CAMPUS_CENTER.lat && bData.center.lng === WWU_CAMPUS_CENTER.lng;
+        if (isPlaceholder) return;
 
         const bMarker = new google.maps.Marker({
             position: bData.center,

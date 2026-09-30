@@ -61,6 +61,7 @@ const ROUTE_LAYER_TYPES = ["ada_route", "functional_route"];
 
 let accessibilityMarkers = []; // { marker, type } for every rendered feature, so toggles can show/hide them
 let layerCheckboxes = {};    // layer type -> its sidebar checkbox
+let openReportsForFlagging = []; // filled by loadCampusReports(); used to flag elevator/restroom markers
 
 // -----------------------------------------------------------------------------------
 // Building locations + ADA info for the main map's building markers. Duplicated (in
@@ -69,32 +70,47 @@ let layerCheckboxes = {};    // layer type -> its sidebar checkbox
 // building info or add real coordinates for a currently-unverified building.
 // -----------------------------------------------------------------------------------
 const WWU_BUILDINGS_FOR_MAP = {
-    "Communications Facility (CF)": { center: { lat: 48.732794, lng: -122.485228 }, ada: { elevators: "Yes (North & South Towers)", autoDoors: "Yes (East & West Main Entrances)", restrooms: "Accessible Gender-Neutral (1st & 2nd Floor)", ramps: "Level Plaza Access" } },
-    "Miller Hall (MH)": { center: { lat: 48.736584, lng: -122.484717 }, ada: { elevators: "Yes (Central Elevator)", autoDoors: "Yes (Red Square Entrance)", restrooms: "Accessible Restrooms (Ground Floor)", ramps: "Slight Slope via Red Square" } },
-    "Academic Instructional West (AW)": { center: { lat: 48.732063, lng: -122.486622 }, ada: { elevators: "Yes (Main Lobby)", autoDoors: "Yes (Push Button All Main Entrances)", restrooms: "All-Gender Accessible Restrooms", ramps: "Fully Integrated Ramp Network" } },
-    "Arntzen Hall (AH)": { center: { lat: 48.733994, lng: -122.485463 }, ada: { elevators: "Yes (Central)", autoDoors: "Yes (East Entrance)", restrooms: "Accessible Restrooms (Floor 1)", ramps: "East Side Ramp Access" } },
-    "Parks Hall (PH)": { center: { lat: 48.733498, lng: -122.486560 }, ada: { elevators: "Yes", autoDoors: "Yes (South Entrance)", restrooms: "Accessible Restrooms (Ground & 2nd)", ramps: "South Courtyard Ramp" } },
-    "Carver (CV)": { center: { lat: 48.735951, lng: -122.486475 }, ada: { elevators: "Yes (Access to all gym floors)", autoDoors: "Yes (Main West Plaza Entrance)", restrooms: "Accessible Locker Rooms & Restrooms", ramps: "Wide External Access Ramps" } },
-    "Wilson Library (WL)": { center: { lat: 48.737771, lng: -122.485770 }, ada: { elevators: "Yes (Access to Haggard Skybridge)", autoDoors: "Yes (Red Square Main Entry)", restrooms: "Accessible Multi-Stall & Single-Stall", ramps: "Red Square Level Access" } },
-    "Bond Hall (BH)": { center: { lat: 48.736608, lng: -122.485979 }, ada: null },
-    "Environmental Studies (ES)": { center: { lat: 48.733360, lng: -122.485862 }, ada: null },
-    "Ross Engineering Technology (ET)": { center: { lat: 48.734570, lng: -122.485557 }, ada: null },
-    "Viking Union (VU)": { center: { lat: 48.738964, lng: -122.486243 }, ada: { elevators: "Yes", autoDoors: "Yes (button-activated, southeast & northwest sides near Garden St)", restrooms: "ADA accessible & all-gender restrooms on 3rd & 7th floors", ramps: "Yes" } },
-    "Alma Clark Glass Hall (CG)": { center: { lat: 48.735566, lng: -122.488917 }, ada: null },
-    "Biology (BI)": { center: { lat: 48.733942, lng: -122.486994 }, ada: null },
-    "Buchanan Towers (BT)": { center: { lat: 48.726803, lng: -122.486827 }, ada: null },
-    "Fairhaven Academic Building / Fairhaven College (FA)": { center: { lat: 48.730328, lng: -122.485730 }, ada: null },
-    "Fairhaven Complex (FX)": { center: { lat: 48.729276, lng: -122.485604 }, ada: null },
-    "Fraser Hall (FR)": { center: { lat: 48.737090, lng: -122.484666 }, ada: null },
-    "Humanities Building (HU)": { center: { lat: 48.737351, lng: -122.485008 }, ada: null },
-    "Mathes Hall (MA)": { center: { lat: 48.739946, lng: -122.484704 }, ada: null },
-    "Nash Hall (NA)": { center: { lat: 48.740255, lng: -122.483773 }, ada: null },
-    "Edens Hall (EH)": { center: { lat: 48.739214, lng: -122.483600 }, ada: null },
-    "Performing Arts Center (PA)": { center: { lat: 48.738073, lng: -122.487228 }, ada: null }
-    // Buildings with unverified coordinates (would all stack at campus center) are
-    // deliberately left out of the map view — showing 30+ overlapping pins with no
-    // real position would be more confusing than not showing them at all. They're
-    // still fully selectable in the report form's dropdown.
+    "Nash Hall (NA)": { center: { lat: 48.74006, lng: -122.483808 }, ada: null },
+    "Mathes Hall (MA)": { center: { lat: 48.739887, lng: -122.484787 }, ada: null },
+    "Higginson Hall (HG)": { center: { lat: 48.739777, lng: -122.483345 }, ada: null },
+    "Viking Commons (VC)": { center: { lat: 48.739338, lng: -122.485016 }, ada: null },
+    "Edens Hall (EH)": { center: { lat: 48.739283, lng: -122.483528 }, ada: null },
+    "Viking Union (VU)": { center: { lat: 48.739, lng: -122.486035 }, ada: { elevators: "Yes", autoDoors: "Yes (button-activated, southeast & northwest sides near Garden St)", restrooms: "ADA accessible & all-gender restrooms on 3rd & 7th floors", ramps: "Yes" } },
+    "Old Main (OM)": { center: { lat: 48.738002, lng: -122.48444 }, ada: null },
+    "Performing Arts Center (PA)": { center: { lat: 48.737958, lng: -122.487223 }, ada: null },
+    "Wilson Library (WL)": { center: { lat: 48.73775, lng: -122.485788 }, ada: { elevators: "Yes (Access to Haggard Skybridge)", autoDoors: "Yes (Red Square Main Entry)", restrooms: "Accessible Multi-Stall & Single-Stall", ramps: "Red Square Level Access" } },
+    "Canada House (CA)": { center: { lat: 48.737732, lng: -122.487808 }, ada: null },
+    "High Street Hall (HS)": { center: { lat: 48.737513, lng: -122.487584 }, ada: null },
+    "Humanities Building (HU)": { center: { lat: 48.737377, lng: -122.48494 }, ada: null },
+    "Haggard Hall (HH)": { center: { lat: 48.737354, lng: -122.486381 }, ada: null },
+    "Fraser Hall (FR)": { center: { lat: 48.73703, lng: -122.484385 }, ada: null },
+    "College Hall (CH)": { center: { lat: 48.737011, lng: -122.486872 }, ada: null },
+    "Alma Clark Glass Hall (CG)": { center: { lat: 48.736496, lng: -122.488152 }, ada: null },
+    "Bond Hall (BH)": { center: { lat: 48.73648, lng: -122.485756 }, ada: null },
+    "Miller Hall (MH)": { center: { lat: 48.736175, lng: -122.484806 }, ada: { elevators: "Yes (Central Elevator)", autoDoors: "Yes (Red Square Entrance)", restrooms: "Accessible Restrooms (Ground Floor)", ramps: "Slight Slope via Red Square" } },
+    "Carver (CV)": { center: { lat: 48.735758, lng: -122.486344 }, ada: { elevators: "Yes (Access to all gym floors)", autoDoors: "Yes (Main West Plaza Entrance)", restrooms: "Accessible Locker Rooms & Restrooms", ramps: "Wide External Access Ramps" } },
+    "Art Annex (AA)": { center: { lat: 48.735733, lng: -122.485184 }, ada: null },
+    "Fine Arts (FI)": { center: { lat: 48.735364, lng: -122.485298 }, ada: null },
+    "SMATE / Science Lecture (SL)": { center: { lat: 48.735212, lng: -122.487157 }, ada: null },
+    "Ridgeway Commons (RC)": { center: { lat: 48.734981, lng: -122.489268 }, ada: null },
+    "Ross Engineering Technology (ET)": { center: { lat: 48.734913, lng: -122.485779 }, ada: null },
+    "Morse Hall / Chemistry Building (CB)": { center: { lat: 48.734618, lng: -122.486611 }, ada: null },
+    "Biology (BI)": { center: { lat: 48.734066, lng: -122.486794 }, ada: null },
+    "Arntzen Hall (AH)": { center: { lat: 48.733856, lng: -122.485703 }, ada: { elevators: "Yes (Central)", autoDoors: "Yes (East Entrance)", restrooms: "Accessible Restrooms (Floor 1)", ramps: "East Side Ramp Access" } },
+    "Parks Hall (PH)": { center: { lat: 48.733589, lng: -122.486691 }, ada: { elevators: "Yes", autoDoors: "Yes (South Entrance)", restrooms: "Accessible Restrooms (Ground & 2nd)", ramps: "South Courtyard Ramp" } },
+    "Environmental Studies (ES)": { center: { lat: 48.733439, lng: -122.485403 }, ada: null },
+    "Communications Facility (CF)": { center: { lat: 48.732744, lng: -122.485176 }, ada: { elevators: "Yes (North & South Towers)", autoDoors: "Yes (East & West Main Entrances)", restrooms: "Accessible Gender-Neutral (1st & 2nd Floor)", ramps: "Level Plaza Access" } },
+    "Academic Instructional Center (AI)": { center: { lat: 48.732037, lng: -122.486071 }, ada: null },
+    "Wade King Recreation Center (SV)": { center: { lat: 48.731758, lng: -122.489037 }, ada: null },
+    "Administrative Services Center (AC)": { center: { lat: 48.731018, lng: -122.474022 }, ada: null },
+    "Fairhaven Academic Building / Fairhaven College (FA)": { center: { lat: 48.730045, lng: -122.485947 }, ada: null },
+    "Fairhaven Complex (FX)": { center: { lat: 48.728935, lng: -122.485748 }, ada: null },
+    "Campus Services (CS)": { center: { lat: 48.727826, lng: -122.48982 }, ada: null },
+    "Commissary (CM)": { center: { lat: 48.72717, lng: -122.484674 }, ada: null },
+    "Buchanan Towers (BT)": { center: { lat: 48.726768, lng: -122.486631 }, ada: null },
+    "Archives Building (AB)": { center: { lat: 48.726013, lng: -122.485695 }, ada: null },
+    "Physical Plant (PP)": { center: { lat: 48.724656, lng: -122.483681 }, ada: null },
+    "Academic Instructional West (AW)": { center: { lat: 48.732063, lng: -122.486622 }, ada: { elevators: "Yes (Main Lobby)", autoDoors: "Yes (Push Button All Main Entrances)", restrooms: "All-Gender Accessible Restrooms", ramps: "Fully Integrated Ramp Network" } }, // kept: hand-documented ADA info, but no WWU data point to confirm its position
 };
 
 let buildingMarkers = [];
@@ -230,6 +246,11 @@ function renderAccessibilityFeatures() {
             zIndex: isRoute ? 10 : 100
         });
 
+        // Created now (not after addListener) so the click handler below can read
+        // entry.flagSeverity — applyOpenReportFlags() fills that in later, but by the time
+        // anyone actually clicks the marker it's already set, since it's the same object.
+        const entry = { marker, type: feature.type, isRoute, large: false, severityColor: null, flagSeverity: null };
+
         marker.addListener("click", () => {
             const buildingLine = feature.building
                 ? `<div style="font-size: 12px; color: #475569; margin-bottom: 4px;">${escapeHtml(feature.building)}</div>`
@@ -240,6 +261,9 @@ function renderAccessibilityFeatures() {
             const routeNote = isRoute
                 ? `<p style="margin: 6px 0 0 0; font-size: 11px; color: #64748b; font-style: italic;">This marks one point along the route — the full path isn't in the data yet.</p>`
                 : "";
+            const flagNote = entry.flagSeverity
+                ? `<p style="margin: 8px 0 0 0; padding: 6px 8px; border-radius: 6px; background: ${SEVERITY_RING_COLORS[entry.flagSeverity]}22; border-left: 3px solid ${SEVERITY_RING_COLORS[entry.flagSeverity]}; font-size: 11px; color: #334155;">\u26A0\uFE0F There\u2019s an open report affecting this building — check Recent Reports for details.</p>`
+                : "";
 
             featureInfoWindow.setContent(`
                 <div style="font-family: sans-serif; padding: 4px; max-width: 240px;">
@@ -249,13 +273,12 @@ function renderAccessibilityFeatures() {
                     <h4 style="margin: 4px 0; font-size: 14px; color: #0f172a;">${escapeHtml(feature.title)}</h4>
                     ${buildingLine}
                     ${descriptionLine}
-                    ${routeNote}
-                </div>
+                    ${routeNote}${flagNote}\n                </div>
             `);
             featureInfoWindow.open({ anchor: marker, map: mainMapInstance });
         });
 
-        accessibilityMarkers.push({ marker, type: feature.type, isRoute, large: false });
+        accessibilityMarkers.push(entry);
     });
 
     const sourceNote = document.getElementById("layers-source-note");
@@ -264,8 +287,73 @@ function renderAccessibilityFeatures() {
     }
 
     createZoomHint();
+    applyOpenReportFlags();
     mainMapInstance.addListener("zoom_changed", refreshFeatureVisibility);
     refreshFeatureVisibility();
+}
+
+// Maps a report's category to the feature-layer type it should flag. Only categories with
+// a clean 1:1 match to a feature layer are included — see the conversation in the project
+// notes for why "Ramp / Walkway Barrier", "Construction Obstruction" etc. aren't here yet
+// (no matching feature layer exists for them).
+const REPORT_CATEGORY_TO_FEATURE_TYPE = {
+    "Elevator/Lift Outage": "elevator",
+    "Restroom Access Issue": "accessible_restroom"
+};
+
+// Strips the "(XX)" building-code suffix report forms use, e.g. "Miller Hall (MH)" -> "Miller Hall"
+function bareBuildingName(reportBuildingValue) {
+    return (reportBuildingValue || "").replace(/\s*\([^)]*\)\s*$/, "").trim();
+}
+
+// Colors elevator/accessible-restroom markers by the worst open report affecting that
+// building, so e.g. a broken elevator in Miller Hall turns every elevator marker in Miller
+// Hall red — building-level, not exact-marker, since reports only capture which building an
+// issue is in, not which specific elevator or restroom.
+function applyOpenReportFlags() {
+    const severityRank = { critical: 3, medium: 2, low: 1 };
+
+    // building name (lowercase) -> feature type -> worst severity found
+    const worstByBuildingAndType = {};
+    openReportsForFlagging.forEach(report => {
+        const featureType = REPORT_CATEGORY_TO_FEATURE_TYPE[report.category];
+        if (!featureType) return;
+        const building = bareBuildingName(report.building).toLowerCase();
+        if (!building) return;
+
+        const severity = (report.severity || "medium").toLowerCase();
+        const key = building + "|" + featureType;
+        const existing = worstByBuildingAndType[key];
+        if (!existing || severityRank[severity] > severityRank[existing]) {
+            worstByBuildingAndType[key] = severity;
+        }
+    });
+
+    accessibilityMarkers.forEach(entry => {
+        if (!(entry.type === "elevator" || entry.type === "accessible_restroom")) return;
+        const title = (entry.marker.getTitle() || "").toLowerCase();
+
+        let matchedSeverity = null;
+        Object.keys(worstByBuildingAndType).forEach(key => {
+            const [building, featureType] = key.split("|");
+            if (featureType !== entry.type || !title.includes(building)) return;
+            const severity = worstByBuildingAndType[key];
+            if (!matchedSeverity || severityRank[severity] > severityRank[matchedSeverity]) {
+                matchedSeverity = severity;
+            }
+        });
+
+        entry.severityColor = matchedSeverity ? SEVERITY_RING_COLORS[matchedSeverity] : null;
+        entry.flagSeverity = matchedSeverity;
+
+        // The icon on the marker right now was drawn before flags were known (this function
+        // runs after all markers are created). Repaint it now so the ring shows immediately —
+        // refreshFeatureVisibility() only redraws icons when the zoom level changes, not when
+        // a flag is set, so without this a flagged marker wouldn't show its ring until you zoom.
+        if (entry.type === "elevator" || entry.type === "accessible_restroom") {
+            entry.marker.setIcon(getFeatureIcon(entry.type, entry.large, entry.severityColor));
+        }
+    });
 }
 
 // Shows/hides each feature marker: a layer's markers appear only when its checkbox is on
@@ -286,7 +374,7 @@ function refreshFeatureVisibility() {
 
         const show = layerOn && zoom >= minZoom;
         if (show && !entry.isRoute && typeof getFeatureIcon === "function" && entry.large !== wantLarge) {
-            entry.marker.setIcon(getFeatureIcon(entry.type, wantLarge));
+            entry.marker.setIcon(getFeatureIcon(entry.type, wantLarge, entry.severityColor));
             entry.large = wantLarge;
         }
         entry.marker.setMap(show ? mainMapInstance : null);
@@ -448,6 +536,7 @@ async function loadCampusReports() {
         !['resolved', 'removed'].includes((r.status || 'open').toLowerCase()) &&
         r.flag_status !== 'pending'
     );
+    openReportsForFlagging = visibleReports;
 
     if (visibleReports.length === 0) {
         if (feedContainer) {

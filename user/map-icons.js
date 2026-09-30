@@ -31,6 +31,10 @@ const FEATURE_MIN_ZOOM = {
 // At or above this zoom the pins are drawn larger
 const FEATURE_LARGE_ICON_ZOOM = 18;
 
+// Colors for flagging a feature with an open report, matching the severity colors used
+// everywhere else on the site (badges, sidebar cards, etc.)
+const SEVERITY_RING_COLORS = { low: "#006B3F", medium: "#FFC61E", critical: "#CC2D30" };
+
 // Pin size in pixels [width, height] at normal and large zoom, and badge diameter
 const FEATURE_ICON_SIZE = {
     pin:   { normal: [22, 29], large: [30, 39] },
@@ -53,43 +57,52 @@ const GLYPHS = {
         '<g transform="translate(9.2 1.4) scale(.86)">' + WHEELCHAIR_GLYPH + '</g>'
 };
 
-function buildPinSvg(style) {
+// severityColor: when set, draws the pin/badge with a colored ring instead of its usual
+// white/neutral one, to signal an open report exists for this feature. Colors match the
+// site's severity palette (green/yellow/red) used everywhere else.
+function buildPinSvg(style, severityColor) {
+    const ringColor = severityColor || "#fff";
+    const ringWidth = severityColor ? 3.2 : 2.4;
     return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 52" width="40" height="52">' +
         '<path d="M20 1.5C9.7 1.5 1.5 9.7 1.5 20c0 13.6 18.5 30.5 18.5 30.5S38.5 33.6 38.5 20C38.5 9.7 30.3 1.5 20 1.5z" ' +
-        'fill="' + style.color + '" stroke="#fff" stroke-width="2.4" stroke-linejoin="round"/>' +
+        'fill="' + style.color + '" stroke="' + ringColor + '" stroke-width="' + ringWidth + '" stroke-linejoin="round"/>' +
         '<g transform="translate(8 8)">' + GLYPHS[style.glyph] + '</g></svg>';
 }
 
-function buildElevatorBadgeSvg(style) {
+function buildElevatorBadgeSvg(style, severityColor) {
     const c = style.color;
+    const ringColor = severityColor || c;
+    const ringWidth = severityColor ? 4 : 3;
     return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44" width="44" height="44">' +
-        '<circle cx="22" cy="22" r="20" fill="#fff" stroke="' + c + '" stroke-width="3"/>' +
+        '<circle cx="22" cy="22" r="20" fill="#fff" stroke="' + ringColor + '" stroke-width="' + ringWidth + '"/>' +
         '<rect x="11" y="7" width="22" height="19" rx="2" fill="none" stroke="' + c + '" stroke-width="2.4"/>' +
         '<path d="M22 10.4l-4.4 5.6h8.8zM22 23l-4.4-5.6h8.8z" fill="' + c + '"/>' +
         '<text x="22" y="37" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="10" fill="' + c + '">ADA</text>' +
         '</svg>';
 }
 
-function featureSvg(type) {
+function featureSvg(type, severityColor) {
     const style = FEATURE_MARKER_STYLE[type];
     if (!style) return null;
-    return style.shape === "badge" ? buildElevatorBadgeSvg(style) : buildPinSvg(style);
+    return style.shape === "badge" ? buildElevatorBadgeSvg(style, severityColor) : buildPinSvg(style, severityColor);
 }
 
 const _featureIconCache = {};
 
 // Returns a Google Maps icon object for a feature type, or null for types drawn as plain
 // dots (the route layers). Needs `google.maps` to exist, so only call it after the map loads.
-function getFeatureIcon(type, large) {
+// severityColor (optional): draws the feature with a colored ring — e.g. "#CC2D30" — to
+// signal an open report affects it. Pass null/omit for the normal look.
+function getFeatureIcon(type, large, severityColor) {
     const style = FEATURE_MARKER_STYLE[type];
     if (!style) return null;
 
-    const key = type + (large ? ":large" : ":normal");
+    const key = type + (large ? ":large" : ":normal") + (severityColor ? ":" + severityColor : "");
     if (_featureIconCache[key]) return _featureIconCache[key];
 
     const [w, h] = FEATURE_ICON_SIZE[style.shape][large ? "large" : "normal"];
     const icon = {
-        url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(featureSvg(type)),
+        url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(featureSvg(type, severityColor)),
         scaledSize: new google.maps.Size(w, h),
         // pins point with their tip; round badges are centered on the spot
         anchor: style.shape === "pin" ? new google.maps.Point(w / 2, h) : new google.maps.Point(w / 2, h / 2)
