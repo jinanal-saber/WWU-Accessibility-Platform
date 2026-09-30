@@ -23,7 +23,7 @@
             <a href="make_report.html" class="nav-btn" id="report-issue-nav-btn">Report Issue</a>
             <a href="subscribe.html" class="nav-btn active" aria-current="page">Get Notified</a>
         </nav>
-        <div class="nav-center"></div>
+        <div class="nav-center">WESTERN WASHINGTON UNIVERSITY</div>
         <div class="nav-right">
             <a href="../Admin/admin.html" class="nav-btn-admin"><i class="fa-solid fa-lock"></i> <span>Admin Login</span></a>
         </div>
@@ -54,25 +54,26 @@
                 <p class="filters-intro">Or, follow specific things instead:</p>
 
                 <div class="form-group">
-                    <label for="sub-buildings">Buildings <span class="optional-label">(optional — leave blank for any building)</span></label>
-                    <select id="sub-buildings" class="form-control" multiple size="6">
+                    <label id="sub-buildings-label">Buildings <span class="optional-label">(optional — leave blank for any building)</span></label>
+                    <!-- Checkboxes rather than a <select multiple>: multi-select dropdowns don't work
+                         reliably via touch on phones (no Ctrl/Cmd key to hold), so this is the version
+                         that actually works on every device -->
+                    <div id="sub-buildings" class="checkbox-list" role="group" aria-labelledby="sub-buildings-label">
                         <!-- Populated by subscribe.js from the same building list as the report form -->
-                    </select>
-                    <p class="field-hint">Hold Ctrl (Windows) or Cmd (Mac) to select more than one.</p>
+                    </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="sub-categories">Issue Types <span class="optional-label">(optional — leave blank for any type)</span></label>
-                    <select id="sub-categories" class="form-control" multiple size="7">
-                        <option value="Elevator/Lift Outage">Elevator/Lift Outage</option>
-                        <option value="Automatic Door Fault">Automatic Door Fault</option>
-                        <option value="Ramp / Walkway Barrier">Ramp / Walkway Barrier</option>
-                        <option value="Construction Obstruction">Construction Obstruction</option>
-                        <option value="Restroom Access Issue">Restroom Access Issue</option>
-                        <option value="Snow / Ice Hazard">Snow / Ice Hazard</option>
-                        <option value="Other Accessibility Issue">Other Accessibility Issue</option>
-                    </select>
-                    <p class="field-hint">Hold Ctrl (Windows) or Cmd (Mac) to select more than one.</p>
+                    <label id="sub-categories-label">Issue Types <span class="optional-label">(optional — leave blank for any type)</span></label>
+                    <div id="sub-categories" class="checkbox-list" role="group" aria-labelledby="sub-categories-label">
+                        <label class="checkbox-list-item"><input type="checkbox" value="Elevator/Lift Outage"> Elevator/Lift Outage</label>
+                        <label class="checkbox-list-item"><input type="checkbox" value="Automatic Door Fault"> Automatic Door Fault</label>
+                        <label class="checkbox-list-item"><input type="checkbox" value="Ramp / Walkway Barrier"> Ramp / Walkway Barrier</label>
+                        <label class="checkbox-list-item"><input type="checkbox" value="Construction Obstruction"> Construction Obstruction</label>
+                        <label class="checkbox-list-item"><input type="checkbox" value="Restroom Access Issue"> Restroom Access Issue</label>
+                        <label class="checkbox-list-item"><input type="checkbox" value="Snow / Ice Hazard"> Snow / Ice Hazard</label>
+                        <label class="checkbox-list-item"><input type="checkbox" value="Other Accessibility Issue"> Other Accessibility Issue</label>
+                    </div>
                 </div>
             </div>
 

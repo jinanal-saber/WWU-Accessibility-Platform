@@ -548,6 +548,52 @@ h1, h2, h3, h4, h5, h6 {
         font-size: 11px;
     }
 
+    /* 5 nav links + the Admin button no longer reliably fit a narrow phone even at this
+       smaller size, so nav-left scrolls horizontally instead of overlapping or wrapping
+       unpredictably -- a standard, safe pattern for a nav bar that has more items than
+       room (the same idea as a scrollable tab strip). */
+    .nav-left {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        flex-wrap: nowrap;
+        scrollbar-width: none;      /* Firefox: hide the scrollbar itself, scrolling still works */
+    }
+
+    /* A faint gradient at the right edge of nav-left itself hints there's more to
+       scroll to, since the scrollbar is hidden below -- otherwise a link sitting just
+       off-screen (like "Get Notified", the last one before Admin) has no visible sign
+       it exists. Anchored to nav-left (not the whole navbar), so it doesn't shade over
+       the always-visible Admin button, and it stays pinned to this edge rather than
+       scrolling away with the links underneath it. */
+    .nav-left {
+        position: relative;
+    }
+
+    .nav-left::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        right: 0;
+        width: 24px;
+        pointer-events: none;
+        background: linear-gradient(to right, transparent, rgba(0, 0, 0, 0.3));
+    }
+
+    .nav-left::-webkit-scrollbar {
+        display: none;              /* Chrome/Safari: same, hide it without disabling scroll */
+    }
+
+    .nav-btn-admin {
+        padding: 6px 10px;
+        font-size: 11px;
+        flex-shrink: 0;             /* never let the Admin button get squeezed by the scrolling nav next to it */
+    }
+
+    .nav-btn-admin span {
+        display: none; /* keep just the lock icon on very tight widths */
+    }
+
     .map-page-container {
         flex-direction: column;
         position: relative;
@@ -628,6 +674,23 @@ h1, h2, h3, h4, h5, h6 {
 .floating-report-btn:hover {
     background-color: var(--blue);
     transform: translateX(-50%) translateY(-2px);
+}
+
+@media (max-width: 768px) {
+    .floating-report-btn {
+        bottom: 16px;
+        padding: 11px 20px;
+        font-size: 13px;
+    }
+}
+
+/* Layer checkboxes/labels are already reasonably sized, but their tap area (the label
+   text plus the checkbox) should be comfortably thumb-sized, not just the 18px checkbox
+   itself -- the whole row is clickable since the checkbox sits inside the <label>. */
+@media (max-width: 768px) {
+    .layer-toggle {
+        min-height: 40px;
+    }
 }
 
 /* Small data-source note under the accessibility layer toggles */

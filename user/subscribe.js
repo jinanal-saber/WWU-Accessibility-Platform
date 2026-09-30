@@ -13,13 +13,16 @@ const WWU_BUILDING_NAMES = [
     "Edens Hall (EH)", "Performing Arts Center (PA)"
 ];
 
+// Checkboxes, not a <select multiple> — multi-select dropdowns don't work reliably via
+// touch on phones (there's no Ctrl/Cmd key to hold down), so this is the version that
+// actually works on every device.
 function populateBuildingOptions() {
-    const select = document.getElementById("sub-buildings");
+    const container = document.getElementById("sub-buildings");
     WWU_BUILDING_NAMES.forEach(name => {
-        const opt = document.createElement("option");
-        opt.value = name;
-        opt.textContent = name;
-        select.appendChild(opt);
+        const label = document.createElement("label");
+        label.className = "checkbox-list-item";
+        label.innerHTML = `<input type="checkbox" value="${name}"> ${name}`;
+        container.appendChild(label);
     });
 }
 
@@ -30,14 +33,13 @@ function wireUpAllNotificationsToggle() {
     checkbox.addEventListener("change", () => {
         filtersSection.classList.toggle("disabled-section", checkbox.checked);
         if (checkbox.checked) {
-            document.getElementById("sub-buildings").selectedIndex = -1;
-            document.getElementById("sub-categories").selectedIndex = -1;
+            document.querySelectorAll("#sub-buildings input, #sub-categories input").forEach(cb => { cb.checked = false; });
         }
     });
 }
 
-function getSelectedValues(selectEl) {
-    return Array.from(selectEl.selectedOptions).map(opt => opt.value);
+function getSelectedValues(containerEl) {
+    return Array.from(containerEl.querySelectorAll("input:checked")).map(cb => cb.value);
 }
 
 function showError(message) {
@@ -76,9 +78,10 @@ document.addEventListener("DOMContentLoaded", () => {
         submitBtn.disabled = true;
         submitBtn.textContent = "Subscribing...";
 
-        // Calls a database function that inserts the row and returns the new
-        // unsubscribe token, all under the database's own elevated privileges —
-        // this sidesteps needing any SELECT permission on the subscriptions table.
+        // Calls a database function that inserts the row and returns the new unsubscribe
+        // token, running under the database's own elevated privileges. This sidesteps
+        // needing any SELECT permission on the subscriptions table at all (that table
+        // deliberately has none, so the subscriber list can never be browsed publicly).
         const { data: returnedToken, error } = await _supabase.rpc('create_subscription', {
             p_email: email,
             p_buildings: allNotifications || buildings.length === 0 ? null : buildings,

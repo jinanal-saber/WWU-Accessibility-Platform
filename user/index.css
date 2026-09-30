@@ -239,7 +239,40 @@ h1, h2, h3, h4, h5, h6 {
         font-size: 11px;
     }
 
+    .nav-left {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        flex-wrap: nowrap;
+        scrollbar-width: none;
+    }
+
+    /* A faint gradient at the right edge of nav-left itself hints there's more to
+       scroll to, since the scrollbar is hidden below -- otherwise a link sitting just
+       off-screen (like "Get Notified", the last one before Admin) has no visible sign
+       it exists. Anchored to nav-left (not the whole navbar), so it doesn't shade over
+       the always-visible Admin button, and it stays pinned to this edge rather than
+       scrolling away with the links underneath it. */
+    .nav-left {
+        position: relative;
+    }
+
+    .nav-left::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        right: 0;
+        width: 24px;
+        pointer-events: none;
+        background: linear-gradient(to right, transparent, rgba(0, 0, 0, 0.3));
+    }
+
+    .nav-left::-webkit-scrollbar {
+        display: none;
+    }
+
     .nav-btn-admin {
+        flex-shrink: 0;
         padding: 6px 10px;
         font-size: 11px;
     }

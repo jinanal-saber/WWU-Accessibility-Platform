@@ -67,13 +67,40 @@ body {
     box-shadow: 0 0 0 3px rgba(0, 122, 200, 0.12);
 }
 
-select.form-control[multiple] {
-    padding: 6px;
+/* Checkbox list — replaces a <select multiple>, which doesn't work reliably on touch
+   devices (no Ctrl/Cmd key to hold). Same bordered-box look, scrolls if it runs long. */
+.checkbox-list {
+    border: 1px solid var(--gray-border);
+    border-radius: 8px;
+    max-height: 220px;
+    overflow-y: auto;
 }
 
-select.form-control[multiple] option {
-    padding: 6px 8px;
-    border-radius: 4px;
+.checkbox-list-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-family: var(--font-body);
+    color: var(--black);
+    cursor: pointer;
+    min-height: 44px;               /* comfortable touch target */
+    border-bottom: 1px solid var(--gray-border);
+}
+
+.checkbox-list-item:last-child {
+    border-bottom: none;
+}
+
+.checkbox-list-item:hover {
+    background-color: var(--gray-light);
+}
+
+.checkbox-list-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
 }
 
 .field-hint {
