@@ -193,6 +193,9 @@ async function initMap() {
     renderBuildingMarkers();
     renderAccessibilityFeatures();
     if (typeof initMapLabels === "function") initMapLabels(mainMapInstance);
+    // Warns that Street View photos may be out of date whenever Street View is opened
+    // (street-view-notice.js; skipped quietly if that file is missing)
+    if (typeof initStreetViewNotice === "function") initStreetViewNotice(mainMapInstance);
     wireUpLayerToggles();
     wireUpSearchAndFilters();
 }
@@ -401,7 +404,12 @@ function createZoomHint() {
 function renderBuildingMarkers() {
     Object.keys(WWU_BUILDINGS_FOR_MAP).forEach(bName => {
         const bData = WWU_BUILDINGS_FOR_MAP[bName];
-        const hasDocumentedADA = !!bData.ada;
+        // "Documented" now also covers buildings whose WWU page lists accessibility details
+        // (building-info.js), not just the few that were typed in by hand
+        // (the typeof checks keep the map working exactly as before if building-info.js
+        // ever fails to load, e.g. if the file was forgotten when deploying)
+        const hasDocumentedADA = !!bData.ada ||
+            (typeof wwuBuildingHasDetails === "function" && wwuBuildingHasDetails(bName));
 
         // Mirrors WWU's own campus map convention: a distinct black badge specifically
         // marks buildings with documented accessibility info, so it's visually obvious
@@ -432,8 +440,17 @@ function renderBuildingMarkers() {
             `
             : `<p style="font-size: 12px; color: #64748b; margin: 0;">Accessibility info not yet documented for this building.</p>`;
 
+        // WWU's own building page (photo + accessibility details) wins when we have it; the
+        // older hand-typed notes above are only the fallback for buildings with no WWU page,
+        // so the two can never contradict each other in the same popup
+        const wwuInfoHtml = (typeof wwuBuildBuildingInfoHtml === "function")
+            ? wwuBuildBuildingInfoHtml(bName)
+            : "";
+
         const infoWindow = new google.maps.InfoWindow({
-            content: `
+            content: wwuInfoHtml
+                ? `<div style="font-family: sans-serif; padding: 4px; max-width: 260px;">${wwuInfoHtml}</div>`
+                : `
                 <div style="font-family: sans-serif; padding: 4px; max-width: 240px;">
                     <h4 style="margin: 0 0 8px 0; font-size: 14px; color: #0f172a;">${escapeHtml(bName)}</h4>
                     ${adaContent}

@@ -317,6 +317,7 @@ function initReportPageMap() {
     });
 
     if (typeof initMapLabels === "function") initMapLabels(reportMapInstance);
+    if (typeof initStreetViewNotice === "function") initStreetViewNotice(reportMapInstance);
 
    
 
@@ -359,11 +360,17 @@ function initReportPageMap() {
             `
             : `<p style="font-size: 12px; color: #64748b; margin: 0 0 10px 0;">Accessibility info not yet documented for this building. See WWU's official map at <a href="https://map.wwu.edu" target="_blank">map.wwu.edu</a> (Accessibility layer) for official info.</p>`;
 
+        // WWU's official photo + accessibility lines (building-info.js) when we have them,
+        // otherwise the same content this popup always showed
+        // (typeof check: falls back to the old popup if building-info.js failed to load)
+        const wwuInfoHtml = (typeof wwuBuildBuildingInfoHtml === "function")
+            ? wwuBuildBuildingInfoHtml(bName, { compact: true })
+            : "";
+
         const adaWindow = new google.maps.InfoWindow({
             content: `
                 <div class="ada-info-box">
-                    <h4>${bName}</h4>
-                    ${adaContent}
+                    ${wwuInfoHtml || `<h4>${bName}</h4>${adaContent}`}
                     <button class="btn-select-building" onclick="selectBuildingFromMap('${bName}')">
                         Select Building for Report
                     </button>
