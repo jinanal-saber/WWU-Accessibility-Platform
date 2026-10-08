@@ -141,8 +141,12 @@ async function runModerationScan() {
         }
     }
 
-    // Persist newly-found flags so they don't need re-scanning (and re-explaining) every visit
-    await Promise.all(newlyFlagged.map(report =>
+    // Persist newly-found flags so they don't need re-scanning (and re-explaining) every visit.
+    // .select('id') makes the database return the rows it changed — an update the database
+    // refuses (for example because the admin session has expired) doesn't raise an error,
+    // it just changes 0 rows, and without checking for that the results would silently not
+    // save and every report would be re-scanned on the next visit.
+    const flagSaves = await Promise.all(newlyFlagged.map(report =>
         _supabase
             .from('reports')
             .update({
@@ -153,15 +157,23 @@ async function runModerationScan() {
                 flag_status: report.flag_status
             })
             .eq('id', report.id)
+            .select('id')
     ));
 
-    // Persist the "checked, nothing wrong" marker too — this is the actual fix
-    await Promise.all(newlyCleared.map(report =>
+    // Persist the "checked, nothing wrong" marker too
+    const clearSaves = await Promise.all(newlyCleared.map(report =>
         _supabase
             .from('reports')
             .update({ flag_status: report.flag_status })
             .eq('id', report.id)
+            .select('id')
     ));
+
+    const failedSaves = [...flagSaves, ...clearSaves].filter(r => r.error || !r.data || r.data.length === 0);
+    if (failedSaves.length > 0) {
+        console.error(`${failedSaves.length} moderation result(s) could not be saved:`, failedSaves.map(r => r.error && r.error.message));
+        alert(`${failedSaves.length} scan result(s) couldn't be saved. You may have been signed out — sign in again, or check that this account is listed as an admin.`);
+    }
 
     allFlaggedReports = allReports.filter(r => r.flag_reason);
 

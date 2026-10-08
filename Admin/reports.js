@@ -190,9 +190,9 @@ async function saveReviewChanges() {
     if (!data || data.length === 0) {
         console.error(
             "Update matched 0 rows for report id:", currentlyReviewedReport.id,
-            "— check Row Level Security policies allow anonymous UPDATE on the 'reports' table."
+            "— the database refused the change. Only signed-in accounts listed in the 'admins' table can update reports."
         );
-        alert("The change didn't save — this looks like a database permissions issue. Check the console for details.");
+        alert("The change didn't save. The database only accepts changes from a signed-in admin, so your sign-in may have expired. Reload the page and sign in again.");
         return;
     }
 
