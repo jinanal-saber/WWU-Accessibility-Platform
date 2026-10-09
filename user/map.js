@@ -177,6 +177,7 @@ async function initMap() {
         minZoom: 15,
         center: WWU_CAMPUS_CENTER,
         disableDefaultUI: false,
+        gestureHandling: "greedy", // one finger pans the map on phones (the default needs two when the page can scroll)
         mapTypeId: google.maps.MapTypeId.SATELLITE, // plain satellite photo: has no text of its own (all labels come from map-labels.js)
         mapTypeControl: false, // no Map/Satellite switcher, so Google's own labels can't be turned back on
         tilt: 0,               // always top-down imagery (45-degree views would shift markers off their buildings)

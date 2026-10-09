@@ -52,7 +52,7 @@
     .wwu-ai-chip { background: #fff; color: #003F87; border: 1.5px solid #003F87; border-radius: 16px; padding: 6px 12px; min-height: 36px; font: inherit; font-size: 13px; cursor: pointer; text-align: left; }
     .wwu-ai-chip:hover { background: #eef4fb; }
     .wwu-ai-form { display: flex; gap: 8px; padding: 10px 14px; border-top: 1px solid #E1E6EB; background: #fff; align-items: flex-end; }
-    .wwu-ai-input { flex: 1; resize: none; border: 1.5px solid #8a96a3; border-radius: 8px; padding: 8px 10px; font: inherit; font-size: 14px; color: #1C2023; min-height: 44px; max-height: 110px; }
+    .wwu-ai-input { flex: 1; resize: none; border: 1.5px solid #8a96a3; border-radius: 8px; padding: 8px 10px; font: inherit; font-size: 16px; color: #1C2023; min-height: 44px; max-height: 110px; }
     .wwu-ai-send { background: #003F87; color: #fff; border: none; border-radius: 8px; min-height: 44px; min-width: 64px; padding: 0 14px; font: inherit; font-weight: 700; cursor: pointer; }
     .wwu-ai-send:disabled { background: #8a96a3; cursor: not-allowed; }
     .wwu-ai-privacy { padding: 0 14px 10px 14px; font-size: 11px; color: #52606D; background: #fff; }
@@ -61,6 +61,8 @@
     .wwu-ai-launcher--floating { position: fixed; right: 20px; bottom: 20px; z-index: 2500; background: #003F87; color: #fff; border: none; border-radius: 28px; padding: 12px 18px; min-height: 48px; font: inherit; font-weight: 700; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,0.35); }
     @media (max-width: 640px) {
         .wwu-ai-panel { inset: 0; right: 0; bottom: 0; width: 100%; max-width: 100%; height: 100%; height: 100dvh; border-radius: 0; }
+        .wwu-ai-input { font-size: 16px; }
+        .wwu-ai-iconbtn, .wwu-ai-chip { min-height: 44px; min-width: 44px; }
     }`;
 
     function el(tag, attrs, children) {
@@ -221,7 +223,7 @@
             } finally {
                 clearTimeout(timer);
                 setBusy(false);
-                input.focus();
+                focusInputIfDesktop();
             }
         }
 
@@ -235,6 +237,13 @@
         // ---------- opening and closing ----------
         function isOpen() { return !panel.hidden; }
 
+        function isTouchDevice() {
+            return !!(window.matchMedia && window.matchMedia("(pointer: coarse)").matches);
+        }
+
+        // Re-focus the text box only where that doesn't force the on-screen keyboard open
+        function focusInputIfDesktop() { if (!isTouchDevice()) input.focus(); }
+
         function openPanel() {
             // On phones the nav links live in a dropdown: close it so it isn't left open behind the chat
             if (nav && nav.classList.contains("open")) {
@@ -244,7 +253,9 @@
             }
             panel.hidden = false;
             launcher.setAttribute("aria-expanded", "true");
-            input.focus();
+            // Touch devices: focusing the text box pops the keyboard up over the chat, so
+            // put focus on the close button instead and let the user tap the box when ready
+            if (isTouchDevice()) closeBtn.focus(); else input.focus();
         }
 
         function closePanel() {
@@ -255,7 +266,7 @@
 
         launcher.addEventListener("click", () => (isOpen() ? closePanel() : openPanel()));
         closeBtn.addEventListener("click", closePanel);
-        newChatBtn.addEventListener("click", () => { if (!busy) { resetChat(); input.focus(); } });
+        newChatBtn.addEventListener("click", () => { if (!busy) { resetChat(); focusInputIfDesktop(); } });
 
         form.addEventListener("submit", event => { event.preventDefault(); send(input.value); });
         input.addEventListener("keydown", event => {
