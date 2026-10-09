@@ -179,6 +179,7 @@ async function initMap() {
         disableDefaultUI: false,
         gestureHandling: "greedy", // one finger pans the map on phones (the default needs two when the page can scroll)
         mapTypeId: google.maps.MapTypeId.SATELLITE, // plain satellite photo: has no text of its own (all labels come from map-labels.js)
+        streetViewControl: false, // Google's tiny pegman is replaced by the labelled button in street-view-button.js
         mapTypeControl: false, // no Map/Satellite switcher, so Google's own labels can't be turned back on
         tilt: 0,               // always top-down imagery (45-degree views would shift markers off their buildings)
         restriction: {
@@ -197,7 +198,9 @@ async function initMap() {
     // Warns that Street View photos may be out of date whenever Street View is opened
     // (street-view-notice.js; skipped quietly if that file is missing)
     if (typeof initStreetViewNotice === "function") initStreetViewNotice(mainMapInstance);
+    if (typeof initStreetViewButton === "function") initStreetViewButton(mainMapInstance);
     wireUpLayerToggles();
+    populateFilterDropdowns(); // fills the Category / Severity lists (this call was missing, so the filters had nothing to pick)
     wireUpSearchAndFilters();
 }
 
@@ -683,8 +686,9 @@ function wireUpSearchAndFilters() {
                 (report.description && report.description.toLowerCase().includes(searchTerm)) ||
                 (report.building && report.building.toLowerCase().includes(searchTerm));
 
-            const matchesCategory = categoryValue === "all" || report.category === categoryValue;
-            const matchesSeverity = severityValue === "all" || report.severity === severityValue;
+            const norm = v => String(v || "").trim().toLowerCase();
+            const matchesCategory = categoryValue === "all" || norm(report.category) === norm(categoryValue);
+            const matchesSeverity = severityValue === "all" || norm(report.severity) === norm(severityValue);
 
             const isVisible = matchesSearch && matchesCategory && matchesSeverity;
 
