@@ -339,6 +339,10 @@ function setLikeButtonState(button, alreadyLiked, count) {
 
 // Increment the like/report count for a report. Anonymous, so we just guard against the
 // same browser double-clicking via localStorage rather than a real per-user constraint.
+// Reports with a like request currently in flight. The server adds +1 for every request it
+// receives, so a fast double-click must not send two.
+const likesInFlight = new Set();
+
 async function handleLikeClick(report) {
     if (report.id === undefined || report.id === null) {
         alert("This report is missing a unique ID, so it can't be liked. Check that your Supabase 'reports' table has an 'id' column.");
@@ -346,14 +350,26 @@ async function handleLikeClick(report) {
     }
 
     if (getLikedReportIds().includes(report.id)) return;
+    if (likesInFlight.has(report.id)) return;
+    likesInFlight.add(report.id);
 
-    const newCount = (report.likes || 0) + 1;
+    try {
+        await sendLike(report);
+    } finally {
+        likesInFlight.delete(report.id);
+    }
+}
 
-    const { data, error } = await _supabase
-        .from('reports')
-        .update({ likes: newCount })
-        .eq('id', report.id)
-        .select();
+async function sendLike(report) {
+    // Calls a database function that adds exactly 1 to this report's like count and
+    // returns the new total. Reports can no longer be edited directly by the public (only
+    // by signed-in admins), so this function is the one thing anonymous visitors are allowed
+    // to do to a report. Doing the +1 on the server also means two people liking at the same
+    // moment both count, which the old "read the count, add one, write it back" approach
+    // could miscount.
+    const { data: newCount, error } = await _supabase.rpc('increment_report_likes', {
+        p_report_id: String(report.id)
+    });
 
     if (error) {
         console.error("Error updating like count:", error.message);
@@ -361,15 +377,10 @@ async function handleLikeClick(report) {
         return;
     }
 
-    if (!data || data.length === 0) {
-        // The request succeeded with no error, but no row actually changed — almost always
-        // a Row Level Security policy silently blocking anonymous UPDATEs (or blocking the
-        // returned data), rather than the id being wrong.
-        console.error(
-            "Update matched 0 rows for report id:", report.id,
-            "— check that your Supabase 'reports' table has a Row Level Security policy allowing public UPDATE (and SELECT on the result) for anonymous users."
-        );
-        alert("The like didn't save — this is likely a database permissions setting (Row Level Security) that needs to allow anonymous updates. Check the console for details.");
+    if (newCount === null || newCount === undefined) {
+        // The call worked but no report matched this id
+        console.error("increment_report_likes matched no report for id:", report.id);
+        alert("Couldn't register that — this report may no longer exist.");
         return;
     }
 

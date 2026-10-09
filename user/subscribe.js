@@ -145,6 +145,17 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
+        // Ask the server to send the "you're subscribed" confirmation email. Fire and forget:
+        // the subscription already exists, so a failed email must never look like a failed signup.
+        // Only the secret token is sent; the server looks up the address itself.
+        if (returnedToken) {
+            _supabase.functions.invoke('send-confirmation', { body: { token: returnedToken } })
+                .then(({ error: confirmError }) => {
+                    if (confirmError) console.error("Confirmation email request failed:", confirmError.message);
+                })
+                .catch(err => console.error("Confirmation email request threw:", err));
+        }
+
         form.hidden = true;
         const successBox = document.getElementById("subscribe-success");
         successBox.hidden = false;

@@ -38,10 +38,13 @@ body {
 .filter-row {
     margin-bottom: 16px;
     display: flex;
+    flex-wrap: wrap;
     gap: 12px;
 }
 
 .filter-dropdown {
+    min-width: 0;
+    max-width: 100%;
     padding: 8px 12px;
     border: 1px solid var(--gray-border, #cbd5e1);
     border-radius: 6px;
@@ -78,6 +81,25 @@ body {
     }
     .reports-list {
         grid-template-columns: 1fr;
+    }
+    /* Stack the filters full-width: a select sizes itself to its longest option
+       (a long building name), which was forcing the whole page wider than the phone */
+    .filter-row {
+        flex-direction: column;
+        gap: 10px;
+    }
+    .filter-dropdown {
+        width: 100%;
+        font-size: 16px; /* 16px stops iPhone from zooming in when a select/input is tapped */
+    }
+    .search-box input {
+        width: 100%;
+        box-sizing: border-box;
+        font-size: 16px;
+    }
+    .reports-page-wrapper, .report-card {
+        min-width: 0;
+        overflow-wrap: anywhere;
     }
 }
 
